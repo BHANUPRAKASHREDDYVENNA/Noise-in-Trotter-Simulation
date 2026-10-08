@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+.DS_Store
+Thumbs.db
+*.log
+build/
+dist/
+*.egg-info/
+results/generated/
+# Keep example results; ignore temporary exports.
+.env
+.env.*
