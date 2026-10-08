@@ -5,6 +5,7 @@ from pathlib import Path
 import json
 
 ROOT = Path(__file__).resolve().parents[1]
+
 BASE_REQUIRED = [
     "README.md",
     "main.ipynb",
@@ -26,11 +27,11 @@ BASE_REQUIRED = [
 def validate(practice: bool = False) -> None:
     missing = [p for p in BASE_REQUIRED if not (ROOT / p).exists()]
     if missing:
-        raise SystemExit("Missing required files:
-- " + "
-- ".join(missing))
+        raise SystemExit("Missing required files:\n- " + "\n- ".join(missing))
 
-    spec = json.loads((ROOT / "data/guide_settings.json").read_text(encoding="utf-8"))
+    spec = json.loads(
+        (ROOT / "data" / "guide_settings.json").read_text(encoding="utf-8")
+    )
     if spec["problem_statement"]["code"] != "S3":
         raise SystemExit("Selected problem statement is not S3.")
 
@@ -43,9 +44,7 @@ def validate(practice: bool = False) -> None:
     ]
     missing = [p for p in expected if not (ROOT / p).exists()]
     if missing:
-        raise SystemExit("Missing workflow/test files:
-- " + "
-- ".join(missing))
+        raise SystemExit("Missing workflow/test files:\n- " + "\n- ".join(missing))
 
     if practice:
         print("Practice-mode repository validation passed.")
