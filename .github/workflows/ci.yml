@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements-practice.txt
+      - name: Install practice dependencies
+        run: python -m pip install -r requirements-practice.txt
+      - name: Run tests
+        run: pytest -q
+      - name: Run practice benchmark
+        run: python scripts/run_practice.py
+      - name: Validate repository structure
+        run: python scripts/validate_submission.py --practice
