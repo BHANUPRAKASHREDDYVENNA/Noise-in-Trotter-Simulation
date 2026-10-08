@@ -1,0 +1,6 @@
+metric,processor_A,processor_B,difference_B_minus_A
+fidelity,0.9917499999999995,0.9467499999999998,-0.04499999999999971
+depth,2.0,8.0,6.0
+two_qubit_gates,1.0,7.0,6.0
+swap_overhead,0.0,2.0,2.0
+postselection_yield,0.99462890625,0.96142578125,-0.033203125
