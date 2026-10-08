@@ -1,0 +1,2 @@
+physical_qubits,depth,two_qubit_gate_count,swap_count,rzz_count,rx_count,cx_count,mean_fidelity,fidelity_std,trajectories,processor,processor_name
+3.0,8.0,4.0,0.0,4.0,4.0,0.0,0.9681851188665959,0.14752688165390426,2000.0,A,practice_fully_connected_3q
