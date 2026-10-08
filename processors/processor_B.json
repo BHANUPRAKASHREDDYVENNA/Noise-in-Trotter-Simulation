@@ -1,0 +1,14 @@
+{
+  "name": "processor_B_toy_5q_line",
+  "num_qubits": 5,
+  "coupling_map": [[0,1],[1,2],[2,3],[3,4]],
+  "basis_gates": ["rz", "sx", "x", "cx"],
+  "ports": [0,4],
+  "noise": {
+    "type": "illustrative_depolarizing_proxy",
+    "p1": 0.001,
+    "p2": 0.01,
+    "readout_error": 0.01
+  },
+  "note": "The 5-qubit line topology and basis gates mirror the explicit illustrative processor in the supplied PDF."
+}
