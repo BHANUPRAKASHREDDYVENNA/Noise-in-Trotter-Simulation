@@ -1,0 +1,14 @@
+{
+  "name": "processor_A_full_5q",
+  "num_qubits": 5,
+  "coupling_map": [[0,1],[0,2],[0,3],[0,4],[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]],
+  "basis_gates": ["rz", "sx", "x", "cx"],
+  "ports": [0,4],
+  "noise": {
+    "type": "illustrative_depolarizing_proxy",
+    "p1": 0.001,
+    "p2": 0.01,
+    "readout_error": 0.01
+  },
+  "note": "Project-defined illustrative comparator derived from the PDF's toy architecture ideas; not an official hardware definition."
+}
