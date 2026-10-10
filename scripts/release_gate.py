@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 import tempfile
+import venv
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -46,6 +48,12 @@ def assert_clean_tree() -> None:
         )
 
 
+def _venv_python(path: Path) -> Path:
+    if os.name == "nt":
+        return path / "Scripts" / "python.exe"
+    return path / "bin" / "python"
+
+
 def build_and_smoke_test_package() -> None:
     run("Build wheel and sdist", sys.executable, "-m", "build")
     wheels = sorted((ROOT / "dist").glob("*.whl"))
@@ -54,9 +62,15 @@ def build_and_smoke_test_package() -> None:
 
     with tempfile.TemporaryDirectory(prefix="release-gate-") as tmp:
         temp_root = Path(tmp)
+        environment = temp_root / "venv"
+        venv.EnvBuilder(with_pip=True, clear=True).create(environment)
+        python = _venv_python(environment)
+        if not python.is_file():
+            raise SystemExit("Isolated release smoke-test interpreter was not created.")
+
         run(
-            "Install built wheel",
-            sys.executable,
+            "Install built wheel in isolated environment",
+            str(python),
             "-m",
             "pip",
             "install",
@@ -66,10 +80,9 @@ def build_and_smoke_test_package() -> None:
         )
         run(
             "Smoke-test installed package",
-            sys.executable,
+            str(python),
             "-c",
             (
-                "import src; "
                 "from src.validation import ValidationError; "
                 "assert ValidationError is not None"
             ),
@@ -109,7 +122,7 @@ def main() -> None:
     )
     run("Run S3 practice benchmark", sys.executable, "scripts/run_practice.py")
     run("Generate practice figures", sys.executable, "scripts/make_practice_figures.py")
-    run("Validate practice repository", sys.executable, "scripts/validate_submission.py", "--practice")
+    run("Validate internal repository contract", sys.executable, "scripts/validate_repository.py")
     run("Dependency vulnerability audit", sys.executable, "-m", "pip_audit")
     assert_clean_generated_outputs()
 
