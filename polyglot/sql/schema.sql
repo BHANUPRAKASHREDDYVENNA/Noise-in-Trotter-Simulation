@@ -12,7 +12,7 @@ $$;
 
 CREATE TABLE IF NOT EXISTS jobs (
     job_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    idempotency_key VARCHAR(128) NOT NULL UNIQUE,
+    idempotency_key VARCHAR(128) NOT NULL,
     task VARCHAR(64) NOT NULL,
     work_units INTEGER NOT NULL,
     max_attempts SMALLINT NOT NULL DEFAULT 3,
@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     last_error TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    CONSTRAINT jobs_idempotency_key_uk UNIQUE (idempotency_key),
     CONSTRAINT jobs_task_format_ck CHECK (task ~ '^[A-Za-z0-9._-]{1,64}$'),
     CONSTRAINT jobs_work_units_ck CHECK (work_units BETWEEN 1 AND 10000000),
     CONSTRAINT jobs_max_attempts_ck CHECK (max_attempts BETWEEN 1 AND 10),
@@ -106,7 +107,7 @@ BEGIN
 
     INSERT INTO jobs (idempotency_key, task, work_units, max_attempts)
     VALUES (p_idempotency_key, p_task, p_work_units, p_max_attempts)
-    ON CONFLICT (idempotency_key) DO NOTHING;
+    ON CONFLICT ON CONSTRAINT jobs_idempotency_key_uk DO NOTHING;
 
     SELECT * INTO existing
     FROM jobs
