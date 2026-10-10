@@ -46,8 +46,7 @@ def verify() -> None:
     if not isinstance(cells, list) or not cells:
         raise SystemExit("Notebook has no cells.")
 
-    markdown = "
-".join(
+    markdown = "\n".join(
         "".join(cell.get("source", []))
         for cell in cells
         if cell.get("cell_type") == "markdown"
