@@ -14,6 +14,9 @@ line-length = 120
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F"]
 
+[tool.setuptools]
+packages = ["src"]
+
 [project]
 name = "qff2026-s3-phase1"
 version = "0.3.0"
