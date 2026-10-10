@@ -4,11 +4,13 @@ import csv
 import json
 import math
 from pathlib import Path
+import sys
 from typing import Any
 
-from src.processors import validate_processor_definition
-
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from src.processors import validate_processor_definition  # noqa: E402
 
 REQUIRED_FILES = (
     "README.md",
@@ -36,6 +38,7 @@ REQUIRED_FILES = (
     "scripts/run_practice.py",
     "scripts/security_audit.py",
     "scripts/release_gate.py",
+    "scripts/validate_repository.py",
     "tests/test_practice.py",
     "tests/test_validation.py",
     "tests/test_bell_benchmark.py",
