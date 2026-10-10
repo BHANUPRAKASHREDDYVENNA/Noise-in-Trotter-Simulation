@@ -9,8 +9,8 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.bell_benchmark import ProcessorModel, benchmark_bell_processor
-from src.processors import validate_processor_definition
+from src.bell_benchmark import ProcessorModel, benchmark_bell_processor  # noqa: E402
+from src.processors import validate_processor_definition  # noqa: E402
 
 RESULTS = ROOT / "results" / "auxiliary"
 

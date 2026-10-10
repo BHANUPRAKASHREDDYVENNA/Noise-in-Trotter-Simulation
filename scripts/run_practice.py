@@ -9,13 +9,13 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.practice_s3 import (
+from src.practice_s3 import (  # noqa: E402
     PracticeProcessor,
     benchmark_processor,
     ideal_exact_state,
     logical_trotter_circuit,
 )
-from src.validation import validate_trotter_parameters
+from src.validation import validate_trotter_parameters  # noqa: E402
 
 
 def main() -> None:

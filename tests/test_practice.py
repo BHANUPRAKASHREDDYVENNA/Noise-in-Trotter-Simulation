@@ -10,14 +10,14 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.practice_s3 import (
+from src.practice_s3 import (  # noqa: E402
     PracticeProcessor,
     benchmark_processor,
     compile_practice,
     ideal_exact_state,
     logical_trotter_circuit,
 )
-from src.validation import ValidationError
+from src.validation import ValidationError  # noqa: E402
 
 
 def test_logical_trotter_builds():
