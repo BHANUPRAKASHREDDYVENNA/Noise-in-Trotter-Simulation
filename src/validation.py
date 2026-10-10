@@ -77,9 +77,11 @@ def validate_trotter_parameters(
 ) -> None:
     positive_int("n_qubits", n_qubits)
     positive_int("trotter_steps", steps)
-    finite_real("total_time", total_time)
+    total_time = finite_real("total_time", total_time)
     finite_real("J", coupling)
     finite_real("h", field)
+    if total_time < 0.0:
+        raise ValidationError("total_time must be non-negative.")
     if trajectories is not None:
         positive_int("trajectories", trajectories, maximum=MAX_TRAJECTORIES)
 

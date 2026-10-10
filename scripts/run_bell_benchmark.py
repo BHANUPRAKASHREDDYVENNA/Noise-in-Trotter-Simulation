@@ -12,7 +12,7 @@ sys.path.insert(0, str(ROOT))
 from src.bell_benchmark import ProcessorModel, benchmark_bell_processor
 from src.processors import validate_processor_definition
 
-RESULTS = ROOT / "results" / "tables"
+RESULTS = ROOT / "results" / "auxiliary"
 
 
 def load(path: Path) -> dict:
@@ -36,11 +36,15 @@ def main() -> None:
             definitions[label]["noise"]["p1"],
             definitions[label]["noise"]["p2"],
             definitions[label]["noise"]["readout_error"],
+            ports=tuple(definitions[label]["ports"]),
         )
         for label in ("A", "B")
     ]
 
-    rows = [benchmark_bell_processor(model, shots=2048, seed=7) for model in models]
+    rows = [
+        benchmark_bell_processor(model, shots=2048, seed=7)
+        for model in models
+    ]
     df = pd.DataFrame(rows)
     df.to_csv(RESULTS / "bell_processor_metrics.csv", index=False)
 
@@ -66,7 +70,7 @@ def main() -> None:
             for metric in metrics
         ]
     )
-    comparison.to_csv(RESULTS / "AB_comparison.csv", index=False)
+    comparison.to_csv(RESULTS / "bell_comparison.csv", index=False)
     print(df.to_string(index=False))
 
 

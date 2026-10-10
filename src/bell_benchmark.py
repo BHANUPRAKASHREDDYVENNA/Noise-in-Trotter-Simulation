@@ -6,7 +6,13 @@ from typing import Iterable
 import numpy as np
 
 from src.processors import interaction_swap_count
-from src.validation import ValidationError, probability, positive_int, validate_processor_mapping
+from src.validation import (
+    ValidationError,
+    probability,
+    positive_int,
+    validate_processor_mapping,
+    validate_qubit,
+)
 
 I = np.eye(2, dtype=complex)
 X = np.array([[0, 1], [1, 0]], dtype=complex)
@@ -22,6 +28,7 @@ class ProcessorModel:
     p1: float
     p2: float
     readout_error: float
+    ports: tuple[int, int] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.name, str) or not self.name.strip():
@@ -31,6 +38,13 @@ class ProcessorModel:
         probability("p1", self.p1)
         probability("p2", self.p2)
         probability("readout_error", self.readout_error)
+        if self.ports is not None:
+            if not isinstance(self.ports, tuple) or len(self.ports) != 2:
+                raise ValidationError("ports must be a tuple of exactly two qubit indices.")
+            validate_qubit("ports[0]", self.ports[0], self.num_qubits)
+            validate_qubit("ports[1]", self.ports[1], self.num_qubits)
+            if self.ports[0] == self.ports[1]:
+                raise ValidationError("ports must refer to distinct qubits.")
 
 
 def kron_all(ops: Iterable[np.ndarray]) -> np.ndarray:
@@ -39,6 +53,9 @@ def kron_all(ops: Iterable[np.ndarray]) -> np.ndarray:
         raise ValidationError("At least one operator is required.")
     result = np.array([[1.0 + 0.0j]])
     for op in ops:
+        op = np.asarray(op)
+        if op.ndim != 2 or op.shape[0] != op.shape[1]:
+            raise ValidationError("Each operator must be a square matrix.")
         result = np.kron(result, op)
     return result
 
@@ -56,8 +73,12 @@ def bell_density() -> np.ndarray:
 
 
 def expectation(state: np.ndarray, observable: np.ndarray) -> float:
-    if state.ndim != 1:
-        raise ValidationError("state must be a vector.")
+    state = np.asarray(state)
+    observable = np.asarray(observable)
+    if state.ndim != 1 or not np.iscomplexobj(state):
+        raise ValidationError("state must be a one-dimensional complex vector.")
+    if observable.ndim != 2 or observable.shape != (state.size, state.size):
+        raise ValidationError("observable shape must match the state dimension.")
     return float(np.real(np.vdot(state, observable @ state)))
 
 
@@ -71,14 +92,21 @@ def bell_correlations(state: np.ndarray) -> dict[str, float]:
 
 def depolarizing_mix(state: np.ndarray, p: float) -> np.ndarray:
     p = probability("p", p)
+    state = np.asarray(state)
+    if state.ndim != 1 or not np.iscomplexobj(state):
+        raise ValidationError("state must be a one-dimensional complex vector.")
     rho = np.outer(state, state.conj())
     dimension = rho.shape[0]
     return (1.0 - p) * rho + p * np.eye(dimension, dtype=complex) / dimension
 
 
 def density_expectation(rho: np.ndarray, observable: np.ndarray) -> float:
-    if rho.ndim != 2:
-        raise ValidationError("rho must be a matrix.")
+    rho = np.asarray(rho)
+    observable = np.asarray(observable)
+    if rho.ndim != 2 or rho.shape[0] != rho.shape[1]:
+        raise ValidationError("rho must be a square matrix.")
+    if observable.ndim != 2 or observable.shape != rho.shape:
+        raise ValidationError("observable shape must match rho.")
     return float(np.real(np.trace(rho @ observable)))
 
 
@@ -88,10 +116,16 @@ def fidelity_to_bell(rho: np.ndarray) -> float:
 
 
 def postselect_bell_z_counts(counts: dict[str, int]) -> tuple[int, int]:
-    if not counts:
-        raise ValidationError("counts must not be empty.")
+    if not isinstance(counts, dict) or not counts:
+        raise ValidationError("counts must be a non-empty dictionary.")
+    total = 0
+    for label, count in counts.items():
+        if not isinstance(label, str):
+            raise ValidationError("Measurement labels must be strings.")
+        if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+            raise ValidationError("Measurement counts must be non-negative integers.")
+        total += count
     accepted = int(counts.get("00", 0) + counts.get("11", 0))
-    total = int(sum(counts.values()))
     if total <= 0 or accepted > total:
         raise ValidationError("Invalid measurement counts.")
     return accepted, total
@@ -113,15 +147,26 @@ def apply_readout_error(probs: dict[str, float], readout_error: float) -> dict[s
     readout_error = probability("readout_error", readout_error)
     if set(probs) != {"00", "01", "10", "11"}:
         raise ValidationError("Bell readout probabilities must contain all four basis states.")
+    input_values = []
+    for label, source_prob in probs.items():
+        if not isinstance(label, str) or len(label) != 2 or set(label) - {"0", "1"}:
+            raise ValidationError("Bell basis labels must be two-bit strings.")
+        if not np.isfinite(source_prob) or source_prob < 0:
+            raise ValidationError("Readout input probabilities must be finite and non-negative.")
+        input_values.append(float(source_prob))
+    if not np.isclose(sum(input_values), 1.0, atol=1e-12):
+        raise ValidationError("Readout input probabilities must sum to one.")
 
     out = {label: 0.0 for label in probs}
     for source, source_prob in probs.items():
-        if not np.isfinite(source_prob) or source_prob < 0:
-            raise ValidationError("Readout input probabilities must be finite and non-negative.")
         bits = [int(source[0]), int(source[1])]
         for flip0 in (0, 1):
             for flip1 in (0, 1):
-                mass = source_prob * (readout_error if flip0 else 1.0 - readout_error) * (readout_error if flip1 else 1.0 - readout_error)
+                mass = (
+                    source_prob
+                    * (readout_error if flip0 else 1.0 - readout_error)
+                    * (readout_error if flip1 else 1.0 - readout_error)
+                )
                 measured = f"{bits[0] ^ flip0}{bits[1] ^ flip1}"
                 out[measured] += mass
 
@@ -130,7 +175,11 @@ def apply_readout_error(probs: dict[str, float], readout_error: float) -> dict[s
     return out
 
 
-def sample_counts(probs: dict[str, float], shots: int, rng: np.random.Generator) -> dict[str, int]:
+def sample_counts(
+    probs: dict[str, float],
+    shots: int,
+    rng: np.random.Generator,
+) -> dict[str, int]:
     positive_int("shots", shots, maximum=10_000_000)
     labels = list(probs)
     values = np.array([probs[label] for label in labels], dtype=float)
@@ -159,20 +208,25 @@ def benchmark_bell_processor(
     positive_int("logical_depth", logical_depth, maximum=1_000_000)
 
     if routing_swaps is None:
-        ports = (0, 1) if processor.num_qubits < 5 else (0, 4)
-        routing_swaps = interaction_swap_count(
-            processor.coupling_map,
-            processor.num_qubits,
-            ports[0],
-            ports[1],
-            restore_layout=False,
-        )
+        if processor.ports is None:
+            routing_swaps = 0
+        else:
+            routing_swaps = interaction_swap_count(
+                processor.coupling_map,
+                processor.num_qubits,
+                processor.ports[0],
+                processor.ports[1],
+                restore_layout=False,
+            )
     if isinstance(routing_swaps, bool) or not isinstance(routing_swaps, int) or routing_swaps < 0:
         raise ValidationError("routing_swaps must be a non-negative integer.")
 
     effective_2q = 1 + 3 * routing_swaps
     single_qubit_events = max(logical_depth - 1, 0)
-    no_error_probability = (1.0 - processor.p2) ** effective_2q * (1.0 - processor.p1) ** single_qubit_events
+    no_error_probability = (
+        (1.0 - processor.p2) ** effective_2q
+        * (1.0 - processor.p1) ** single_qubit_events
+    )
     effective_noise = float(np.clip(1.0 - no_error_probability, 0.0, 0.99))
 
     rho = depolarizing_mix(bell_state(), effective_noise)
@@ -181,7 +235,10 @@ def benchmark_bell_processor(
     zz = density_expectation(rho, np.kron(Z, Z))
     fidelity = fidelity_to_bell(rho)
 
-    measured_probs = apply_readout_error(bell_measurement_probs(rho), processor.readout_error)
+    measured_probs = apply_readout_error(
+        bell_measurement_probs(rho),
+        processor.readout_error,
+    )
     counts = sample_counts(measured_probs, shots, np.random.default_rng(seed))
     accepted, total = postselect_bell_z_counts(counts)
     yield_rate = accepted / total
@@ -189,7 +246,9 @@ def benchmark_bell_processor(
     return {
         "processor": processor.name,
         "fidelity": fidelity,
-        "fidelity_uncertainty_proxy": float(np.sqrt(max(fidelity * (1.0 - fidelity), 0.0) / shots)),
+        "fidelity_uncertainty_proxy": float(
+            np.sqrt(max(fidelity * (1.0 - fidelity), 0.0) / shots)
+        ),
         "XX": xx,
         "YY": yy,
         "ZZ": zz,

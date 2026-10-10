@@ -5,14 +5,21 @@ import csv
 import json
 import math
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 
 BASE_REQUIRED = [
     "README.md",
+    "LICENSE",
+    "SECURITY.md",
     "main.ipynb",
     "requirements.txt",
+    "requirements-practice.txt",
+    "pyproject.toml",
     "data/guide_settings.json",
+    "data/practice_config.json",
+    "data/official_kit/manifest.schema.json",
     "processors/processor_A.json",
     "processors/processor_B.json",
     "src/problem.py",
@@ -22,22 +29,34 @@ BASE_REQUIRED = [
     "src/visualization.py",
     "src/bell_benchmark.py",
     "src/practice_s3.py",
+    "src/validation.py",
     "report/report.md",
 ]
 
 WORKFLOW_FILES = [
+    ".github/workflows/ci.yml",
+    "scripts/build_notebook.py",
     "scripts/run_practice.py",
-    "scripts/run_bell_benchmark.py",
     "scripts/make_practice_figures.py",
     "scripts/security_audit.py",
-    "tests/test_practice.py",
-    "tests/test_bell_benchmark.py",
     "scripts/verify_notebook.py",
+    "tests/test_practice.py",
+    "tests/test_validation.py",
+    "tests/test_bell_benchmark.py",
 ]
 
 
-def _load_json(path: str | Path) -> dict:
-    return json.loads((ROOT / path).read_text(encoding="utf-8"))
+def _load_json(path: str | Path) -> dict[str, Any]:
+    target = ROOT / path
+    try:
+        data = json.loads(target.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise SystemExit(f"Required JSON file is missing: {path}") from exc
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"Invalid JSON in {path}: {exc}") from exc
+    if not isinstance(data, dict):
+        raise SystemExit(f"JSON file must contain an object: {path}")
+    return data
 
 
 def _safe_repo_path(relative_path: str) -> Path:
@@ -50,7 +69,7 @@ def _safe_repo_path(relative_path: str) -> Path:
 
 
 def _check_base() -> None:
-    missing = [p for p in BASE_REQUIRED if not (ROOT / p).exists()]
+    missing = [p for p in BASE_REQUIRED if not (ROOT / p).is_file()]
     if missing:
         raise SystemExit("Missing required files:\n- " + "\n- ".join(missing))
 
@@ -58,9 +77,9 @@ def _check_base() -> None:
     if spec.get("problem_statement", {}).get("code") != "S3":
         raise SystemExit("Selected problem statement is not S3.")
 
-    missing = [p for p in WORKFLOW_FILES if not (ROOT / p).exists()]
-    if missing:
-        raise SystemExit("Missing workflow/test files:\n- " + "\n- ".join(missing))
+    workflow_missing = [p for p in WORKFLOW_FILES if not (ROOT / p).is_file()]
+    if workflow_missing:
+        raise SystemExit("Missing workflow/test files:\n- " + "\n- ".join(workflow_missing))
 
 
 def _check_practice_results() -> None:
@@ -69,19 +88,50 @@ def _check_practice_results() -> None:
         raise SystemExit("Practice result table is missing. Run scripts/run_practice.py first.")
 
     with comparison.open(newline="", encoding="utf-8") as handle:
-        rows = list(csv.DictReader(handle))
+        reader = csv.DictReader(handle)
+        rows = list(reader)
+        columns = set(reader.fieldnames or [])
 
-    if {row.get("processor") for row in rows} != {"A", "B"}:
-        raise SystemExit("Practice results must contain exactly Processor A and Processor B.")
+    processors = [row.get("processor") for row in rows]
+    if len(rows) != 2 or processors != ["A", "B"]:
+        raise SystemExit("Practice results must contain exactly one row for Processor A and one for Processor B.")
+
+    required_columns = {
+        "processor",
+        "mean_fidelity",
+        "depth",
+        "two_qubit_gate_count",
+        "swap_count",
+        "physical_qubits",
+        "trajectories",
+        "fidelity_stderr",
+    }
+    if not required_columns.issubset(columns):
+        raise SystemExit(
+            "Practice result table is missing required architecture or uncertainty columns: "
+            + ", ".join(sorted(required_columns - columns))
+        )
 
     for row in rows:
-        fidelity = float(row["mean_fidelity"])
-        depth = float(row["depth"])
-        two_q = float(row["two_qubit_gate_count"])
-        if not 0.0 <= fidelity <= 1.0:
-            raise SystemExit("Practice mean_fidelity must be in [0, 1].")
-        if not all(math.isfinite(value) and value >= 0.0 for value in (depth, two_q)):
-            raise SystemExit("Practice architecture metrics must be finite and non-negative.")
+        try:
+            fidelity = float(row["mean_fidelity"])
+            numeric = [
+                float(row["depth"]),
+                float(row["two_qubit_gate_count"]),
+                float(row["swap_count"]),
+                float(row["physical_qubits"]),
+                float(row["trajectories"]),
+                float(row["fidelity_stderr"]),
+            ]
+        except (KeyError, TypeError, ValueError) as exc:
+            raise SystemExit("Practice result table contains malformed numeric fields.") from exc
+
+        if not math.isfinite(fidelity) or not 0.0 <= fidelity <= 1.0:
+            raise SystemExit("Practice mean_fidelity must be finite and in [0, 1].")
+        if not all(math.isfinite(value) and value >= 0.0 for value in numeric):
+            raise SystemExit(
+                "Practice architecture and uncertainty metrics must be finite and non-negative."
+            )
 
     figures = ROOT / "results" / "figures"
     required_figures = {"practice_ab_performance.png", "practice_architecture_tradeoffs.png"}
@@ -96,41 +146,87 @@ def validate_practice() -> None:
     print("Practice-mode repository validation passed.")
 
 
+def _manifest_string(manifest: dict[str, Any], key: str) -> str:
+    value = manifest.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise SystemExit(f"Official manifest field {key} must be a non-empty string.")
+    return value
+
+
 def validate_official() -> None:
     _check_base()
 
     manifest_path = ROOT / "data" / "official_kit" / "manifest.json"
-    if not manifest_path.exists():
-        raise SystemExit("Official validation blocked: the organizer-supplied S3 Challenge Kit is missing.")
+    if not manifest_path.is_file():
+        raise SystemExit(
+            "Official validation blocked: the organizer-supplied S3 Challenge Kit is missing."
+        )
 
     manifest = _load_json(manifest_path)
-    fields = ("kit_version", "source_files", "s3_instance", "processor_A", "processor_B", "required_outputs")
-    missing = [key for key in fields if not manifest.get(key)]
-    if missing:
-        raise SystemExit("Official manifest is incomplete: " + ", ".join(missing))
+    _manifest_string(manifest, "kit_version")
+    s3_instance_value = _manifest_string(manifest, "s3_instance")
 
-    for source in manifest["source_files"]:
+    source_files = manifest.get("source_files")
+    if not isinstance(source_files, list) or not source_files or not all(
+        isinstance(item, str) and item.strip() for item in source_files
+    ):
+        raise SystemExit(
+            "Official manifest source_files must be a non-empty list of paths."
+        )
+
+    required_outputs = manifest.get("required_outputs")
+    if not isinstance(required_outputs, list) or not required_outputs or not all(
+        isinstance(item, str) and item.strip() for item in required_outputs
+    ):
+        raise SystemExit(
+            "Official manifest required_outputs must be a non-empty list of strings."
+        )
+
+    if manifest.get("processor_A") != "processors/processor_A.json":
+        raise SystemExit(
+            "Official manifest processor_A must reference processors/processor_A.json."
+        )
+    if manifest.get("processor_B") != "processors/processor_B.json":
+        raise SystemExit(
+            "Official manifest processor_B must reference processors/processor_B.json."
+        )
+
+    for source in source_files:
         if not _safe_repo_path(source).is_file():
-            raise SystemExit(f"Official manifest references missing source file: {source}")
+            raise SystemExit(
+                f"Official manifest references missing source file: {source}"
+            )
 
-    for key in ("s3_instance", "processor_A", "processor_B"):
-        if not _safe_repo_path(str(manifest[key])).is_file():
-            raise SystemExit(f"Official manifest references missing file: {manifest[key]}")
-
-    if not all(isinstance(item, str) and item.strip() for item in manifest["required_outputs"]):
-        raise SystemExit("Official required_outputs must be non-empty strings.")
-
-    spec = _load_json("data/guide_settings.json")
-    if spec.get("status") != "OFFICIAL_CHALLENGE_KIT":
-        raise SystemExit("Official validation blocked: guide-derived settings are still active.")
+    s3_instance = _safe_repo_path(s3_instance_value)
+    if not s3_instance.is_file():
+        raise SystemExit(
+            f"Official manifest references missing S3 instance: {s3_instance_value}"
+        )
 
     for label in ("A", "B"):
         processor = _load_json(f"processors/processor_{label}.json")
         if processor.get("source") != "official_challenge_kit":
-            raise SystemExit(f"Processor {label} is not marked as organizer-supplied.")
-        text = json.dumps(processor).lower()
-        if any(word in text for word in ("illustrative", "toy", "practice", "placeholder")):
-            raise SystemExit(f"Processor {label} contains an illustrative configuration marker.")
+            raise SystemExit(
+                f"Processor {label} is not marked as organizer-supplied."
+            )
+        text = json.dumps(processor, sort_keys=True).lower()
+        if any(
+            word in text
+            for word in ("illustrative", "toy", "practice", "placeholder")
+        ):
+            raise SystemExit(
+                f"Processor {label} contains an illustrative configuration marker."
+            )
+
+    spec = _load_json("data/guide_settings.json")
+    if spec.get("status") != "OFFICIAL_CHALLENGE_KIT":
+        raise SystemExit(
+            "Official validation blocked: guide-derived settings are still active."
+        )
+    if spec.get("problem_statement", {}).get("code") != "S3":
+        raise SystemExit(
+            "Official validation blocked: selected problem statement is not S3."
+        )
 
     print("Official Phase-1 repository validation passed.")
 
