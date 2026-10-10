@@ -122,7 +122,7 @@ def build() -> None:
         "nbformat": 4,
         "nbformat_minor": 5,
     }
-    OUTPUT.write_text(json.dumps(notebook, indent=2) + "\n", encoding="utf-8")
+    OUTPUT.write_text(json.dumps(notebook, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":
