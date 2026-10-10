@@ -349,3 +349,17 @@ This repository was prepared with AI-assisted development. The submitting team m
 The supplied 26-page starter notebook provides the Phase-1 methodology, an illustrative 5-qubit line processor, a Bell-state example, routing/transpilation examples, an illustrative noise model, metrics, reporting requirements and repository guidance. It does not itself specify every scientific parameter required to define a unique S3 benchmark.
 
 Therefore, all non-source numerical settings used by the runnable demonstrations are explicitly labeled **illustrative** and are separated from the repository's methodological structure.
+
+
+## Engineering hardening
+
+The runnable practice implementation includes strict configuration validation, topology-derived routing, statevector memory guards, online statistical accumulation, explicit readout-error handling, deterministic notebook generation and CI verification.
+
+Validation modes:
+
+~~~bash
+python scripts/validate_submission.py --practice
+python scripts/validate_submission.py --official
+~~~
+
+Practice validation checks the full runnable engineering scaffold and generated artifacts. Official validation intentionally fails closed until the organizer-supplied S3 Challenge Kit is integrated.

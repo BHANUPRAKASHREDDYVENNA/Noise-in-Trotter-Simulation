@@ -49,3 +49,9 @@ The project demonstrates the central Phase-1 principle: the same logical quantum
 The current repository is practice-complete but kit-blocked. Continuous integration is green and the reproducible practice workflow, notebook structure, tests, metrics, figures and reporting scaffold are in place. The only remaining scientific substitution is the organizer-defined S3 Challenge Kit: its S3 instance, required outputs and exact Processor A/B definitions must replace the illustrative files before final competition results are generated.
 
 The official readiness validator is intentionally strict and will refuse to declare the repository submission-ready while any referenced processor/model remains illustrative or while the official kit manifest is missing. This prevents a false PASS.
+
+## 12. Engineering hardening and verification
+
+The implementation was hardened around input validation, numerical resource limits, routing correctness, readout modeling, statistical accumulation, notebook reproducibility, CI artifact generation and fail-closed official validation.
+
+The practice benchmark is therefore a reproducible engineering scaffold. It remains explicitly separate from official competition results until the organizer Challenge Kit is applied.
