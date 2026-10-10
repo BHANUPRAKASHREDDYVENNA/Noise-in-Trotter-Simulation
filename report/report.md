@@ -16,9 +16,9 @@ Problem/algorithm → logical circuit → placement/routing/gate decomposition �
 
 A Bell-state preparation is used because the guide explicitly presents it as an interpretable coherence benchmark. The benchmark reports XX, YY and ZZ correlations and quantifies fidelity, routing overhead and postselection yield.
 
-## 5. Processor comparison
+## 5. Processor comparison — practice models only
 
-Processor A is an illustrative fully connected five-qubit architecture. Processor B is the guide's illustrative five-qubit line topology. The same logical workload is evaluated under the same nominal noise proxy so that topology/routing is the principal changed condition.
+The current local practice comparison uses an illustrative fully connected five-qubit graph for A and an illustrative five-qubit line graph for B. These are **not** the official Processor A/B definitions: the supplied geometry-aware presentation describes A as 5 qubits and B as 7 qubits with a heavy-hex-inspired graph. The official S3 Challenge Kit must supply the exact definitions before any result can be treated as the competition A/B benchmark. The same logical workload is used in this practice experiment, but the model differences are illustrative rather than organizer-certified.
 
 ## 6. Routing analysis
 
@@ -34,7 +34,7 @@ The benchmark reports accepted versus discarded computational-basis shots and th
 
 ## 9. Limitations
 
-The supplied guide does not provide a unique scientific S3 Hamiltonian, Trotter order or official processor configuration for this standalone repository. Therefore the numerical Trotter and processor parameters here are explicitly illustrative and must not be presented as organizer-certified values.
+The supplied general participant instructions say the selected problem's Challenge Kit determines problem-specific instances, outputs, and platform definitions. The complete official S3 kit and its exact processor definitions are not yet verified in this repository. The numerical Trotter settings, processor graphs, noise rates, and benchmark outputs are therefore illustrative practice values and must not be presented as organizer-certified values or official S3 results.
 
 ## 10. Reproducibility
 
