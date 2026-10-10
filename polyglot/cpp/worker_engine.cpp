@@ -78,7 +78,9 @@ std::uint64_t execute_job(const Job &job) {
         state ^= state >> 27U;
         state *= 2685821657736338717ULL;
     }
-    return state;
+    // Persisted checksums use PostgreSQL BIGINT, so keep the checksum in
+    // the non-negative signed 64-bit range without changing determinism.
+    return state & 0x7FFFFFFFFFFFFFFFULL;
 }
 
 PgConn connect_db(const std::string &dsn, const std::string &application_name) {
@@ -190,7 +192,7 @@ public:
         Job job{1U, "00000000-0000-0000-0000-000000000001", "self_test", 3, 1};
         const std::uint64_t a = execute_job(job);
         const std::uint64_t b = execute_job(job);
-        if (a != b || a == 0U) {
+        if (a != b || a == 0U || a > 0x7FFFFFFFFFFFFFFFULL) {
             std::cerr << "C++ self-test failed: checksum is not deterministic.\n";
             return 1;
         }
