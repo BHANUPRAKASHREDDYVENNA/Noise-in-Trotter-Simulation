@@ -19,7 +19,7 @@ The implementation follows the online Phase-1 workflow described in the supplied
 
 The supplied guide does not define a complete S3 Hamiltonian, Trotter order, or final S3-specific instance. To keep the repository runnable without inventing organizer-specific data, the project contains:
 
-- a **PDF-derived architecture benchmark** using the guide's explicit Bell-state, routing, noise and measurement examples;
+- a **guide-inspired Bell practice benchmark** using the guide's Bell-state and measurement concepts; its processor graphs, noise rates and routing overhead are locally illustrative, not a recreation of the official Processor A/B models;
 - a **minimal Trotter demonstrator** whose parameters are documented as an illustrative research model, not as an organizer-defined benchmark;
 - an **optional Qiskit/Aer path** matching the code style shown in the guide;
 - machine-readable results and figures that can be regenerated.
@@ -125,7 +125,7 @@ pip install -r requirements-practice.txt
 
 ---
 
-## Run the PDF-derived Bell architecture benchmark
+## Run the guide-inspired Bell practice benchmark
 
 ```bash
 python scripts/run_bell_benchmark.py
