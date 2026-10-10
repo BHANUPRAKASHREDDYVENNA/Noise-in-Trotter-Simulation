@@ -26,6 +26,8 @@ The supplied guide does not define a complete S3 Hamiltonian, Trotter order, or 
 
 No demonstrator result is claimed as an official competition result.
 
+> **Competition-readiness warning:** the current processor JSON files are local illustrative practice models, not the official Processor A/B definitions. The supplied geometry-aware challenge presentation describes Processor A as 5 qubits and Processor B as 7 qubits with a heavy-hex-inspired graph; this repository's practice models are both 5 qubits and use fully-connected/line graphs. Do not submit practice metrics as the required official A/B results. Replace the practice models only when the organizer-provided S3 Challenge Kit supplies the exact processor definitions, S3 instance, required outputs, and benchmark fields.
+
 ---
 
 ## Repository structure
