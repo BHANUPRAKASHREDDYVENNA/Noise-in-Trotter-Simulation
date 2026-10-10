@@ -97,10 +97,10 @@ public final class PolyglotService {
 
     private void handleHealth(HttpExchange exchange) throws IOException {
         if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
-            sendJson(exchange, 405, "{"error":"method not allowed"}");
+            sendJson(exchange, 405, "{\"error\":\"method not allowed\"}");
             return;
         }
-        sendJson(exchange, 200, "{"status":"ok"}");
+        sendJson(exchange, 200, "{\"status\":\"ok\"}");
     }
 
     private void handleJobs(HttpExchange exchange) throws IOException {
@@ -115,7 +115,7 @@ public final class PolyglotService {
                 handleGetJob(exchange, path.substring("/v1/jobs/".length()));
                 return;
             }
-            sendJson(exchange, 404, "{"error":"not found"}");
+            sendJson(exchange, 404, "{\"error\":\"not found\"}");
         } catch (ValidationException error) {
             sendJson(exchange, 400, jsonError(error.getMessage()));
         } catch (JobConflictException error) {
@@ -331,7 +331,7 @@ public final class PolyglotService {
         if (parseInt(values, "work_units", 1, 10_000_000) != 5) {
             throw new AssertionError("integer parsing failed");
         }
-        if (!"{"error":"x\"y"}".equals(jsonError("x"y"))) {
+        if (!"{\"error\":\"x\\\"y\"}".equals(jsonError("x\"y"))) {
             throw new AssertionError("JSON escaping failed");
         }
         System.out.println("Java domain service self-test passed.");
@@ -356,22 +356,26 @@ public final class PolyglotService {
     ) {
         String toJson() {
             String result = resultChecksum == null ? "null" : resultChecksum.toString();
-            String locked = lockedAt == null ? "null" : """ + escapeJson(lockedAt.toString()) + """;
-            String error = lastError == null ? "null" : """ + escapeJson(lastError) + """;
+            String locked = lockedAt == null
+                ? "null"
+                : "\"" + escapeJson(lockedAt.toString()) + "\"";
+            String error = lastError == null
+                ? "null"
+                : "\"" + escapeJson(lastError) + "\"";
             return "{"
-                + ""job_id":"" + jobId + "","
-                + ""idempotency_key":"" + escapeJson(idempotencyKey) + "","
-                + ""task":"" + escapeJson(task) + "","
-                + ""work_units":" + workUnits + ","
-                + ""max_attempts":" + maxAttempts + ","
-                + ""attempt_count":" + attemptCount + ","
-                + ""status":"" + status + "","
-                + ""available_at":"" + escapeJson(availableAt.toString()) + "","
-                + ""locked_at":" + locked + ","
-                + ""result_checksum":" + result + ","
-                + ""last_error":" + error + ","
-                + ""created_at":"" + escapeJson(createdAt.toString()) + "","
-                + ""updated_at":"" + escapeJson(updatedAt.toString()) + """
+                + "\"job_id\":\"" + jobId + "\","
+                + "\"idempotency_key\":\"" + escapeJson(idempotencyKey) + "\","
+                + "\"task\":\"" + escapeJson(task) + "\","
+                + "\"work_units\":" + workUnits + ","
+                + "\"max_attempts\":" + maxAttempts + ","
+                + "\"attempt_count\":" + attemptCount + ","
+                + "\"status\":\"" + escapeJson(status) + "\","
+                + "\"available_at\":\"" + escapeJson(availableAt.toString()) + "\","
+                + "\"locked_at\":" + locked + ","
+                + "\"result_checksum\":" + result + ","
+                + "\"last_error\":" + error + ","
+                + "\"created_at\":\"" + escapeJson(createdAt.toString()) + "\","
+                + "\"updated_at\":\"" + escapeJson(updatedAt.toString()) + "\""
                 + "}";
         }
     }
