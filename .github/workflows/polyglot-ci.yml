@@ -1,0 +1,147 @@
+name: Polyglot Integration CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "polyglot/**"
+      - ".github/workflows/polyglot-ci.yml"
+  pull_request:
+    paths:
+      - "polyglot/**"
+      - ".github/workflows/polyglot-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: polyglot
+          POSTGRES_USER: polyglot
+          POSTGRES_PASSWORD: polyglot
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U polyglot -d polyglot"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGDATABASE: polyglot
+      PGUSER: polyglot
+      PGPASSWORD: polyglot
+      POLYGLOT_DATABASE_URL: postgresql://polyglot:polyglot@127.0.0.1:5432/polyglot
+      POLYGLOT_JDBC_URL: jdbc:postgresql://127.0.0.1:5432/polyglot?connectTimeout=3&socketTimeout=5
+      POLYGLOT_DB_USER: polyglot
+      POLYGLOT_DB_PASSWORD: polyglot
+      ASAN_OPTIONS: detect_leaks=1
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11.17"
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install native/database dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libpq-dev postgresql-client libpostgresql-jdbc-java
+
+      - name: Verify SQL schema and atomic lifecycle functions
+        run: |
+          psql "$POLYGLOT_DATABASE_URL" -v ON_ERROR_STOP=1 -f polyglot/sql/schema.sql
+          psql "$POLYGLOT_DATABASE_URL" -v ON_ERROR_STOP=1 -f polyglot/sql/verify.sql
+
+      - name: Build and test C bounded queue with sanitizers
+        run: |
+          mkdir -p build/polyglot/java
+          cc -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -pthread \
+            -fsanitize=address,undefined -fno-omit-frame-pointer \
+            -Ipolyglot/c -c polyglot/c/bounded_queue.c -o build/polyglot/bounded_queue_san.o
+          cc -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -pthread \
+            -fsanitize=address,undefined -fno-omit-frame-pointer \
+            -Ipolyglot/c polyglot/c/test_bounded_queue.c build/polyglot/bounded_queue_san.o \
+            -o build/polyglot/c_queue_test
+          build/polyglot/c_queue_test
+
+      - name: Build C++ worker engine
+        run: |
+          cc -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -pthread \
+            -Ipolyglot/c -c polyglot/c/bounded_queue.c -o build/polyglot/bounded_queue.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -pthread \
+            -I/usr/include/postgresql polyglot/cpp/worker_engine.cpp build/polyglot/bounded_queue.o \
+            -lpq -o build/polyglot/polyglot_worker
+          build/polyglot/polyglot_worker --self-test
+
+      - name: Compile and self-test Java service
+        run: |
+          javac --release 17 -Xlint:all -Werror -d build/polyglot/java polyglot/java/PolyglotService.java
+          java -cp build/polyglot/java PolyglotService --self-test
+
+      - name: Test Python orchestrator
+        run: |
+          python3 -m unittest discover -s polyglot/python -p 'test_*.py'
+          python3 -m py_compile polyglot/python/orchestrator.py polyglot/python/test_orchestrator.py
+
+      - name: Start Java domain service
+        run: |
+          PGJDBC_JAR="$(find /usr/share/java -maxdepth 1 -type f -name 'postgresql*.jar' | sort | head -n 1)"
+          test -n "$PGJDBC_JAR"
+          java -cp "build/polyglot/java:$PGJDBC_JAR" PolyglotService \
+            --jdbc-url "$POLYGLOT_JDBC_URL" \
+            --db-user "$POLYGLOT_DB_USER" \
+            --db-password "$POLYGLOT_DB_PASSWORD" \
+            --host 127.0.0.1 --port 8080 --pool-size 8 > /tmp/polyglot-java.log 2>&1 &
+          echo $! > /tmp/polyglot-java.pid
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:8080/health >/tmp/polyglot-health.json; then
+              grep -q '"status":"ok"' /tmp/polyglot-health.json
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/polyglot-java.log
+          exit 1
+
+      - name: Run C++ worker and Python async orchestration end-to-end
+        run: |
+          build/polyglot/polyglot_worker \
+            --dsn "host=127.0.0.1 port=5432 dbname=polyglot user=polyglot password=polyglot connect_timeout=3" \
+            --worker-id ci-worker --threads 4 --queue-capacity 32 --jobs 8 --poll-ms 100 > /tmp/polyglot-worker.log 2>&1 &
+          worker_pid=$!
+          python3 polyglot/python/orchestrator.py --base-url http://127.0.0.1:8080 --jobs 8
+          wait "$worker_pid"
+          cat /tmp/polyglot-worker.log
+
+      - name: Verify persisted results
+        run: |
+          count="$(psql "$POLYGLOT_DATABASE_URL" -Atc "SELECT count(*) FROM jobs WHERE task LIKE 'cpu_task_%' AND status = 'COMPLETED';")"
+          test "$count" = "8"
+          psql "$POLYGLOT_DATABASE_URL" -c \
+            "SELECT task, status, attempt_count, result_checksum FROM jobs WHERE task LIKE 'cpu_task_%' ORDER BY task;"
+
+      - name: Stop Java service
+        if: always()
+        run: |
+          if test -f /tmp/polyglot-java.pid; then
+            kill "$(cat /tmp/polyglot-java.pid)" 2>/dev/null || true
+          fi
+          cat /tmp/polyglot-java.log 2>/dev/null || true
