@@ -9,6 +9,7 @@
 #include <cstring>
 #include <exception>
 #include <iostream>
+#include <mutex>
 #include <memory>
 #include <shared_mutex>
 #include <stdexcept>
