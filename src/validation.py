@@ -5,6 +5,8 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 DEFAULT_MAX_STATEVECTOR_BYTES = 128 * 1024 * 1024
+ABSOLUTE_MAX_STATEVECTOR_BYTES = 256 * 1024 * 1024
+MAX_STATEVECTOR_QUBITS = 26
 MAX_TRAJECTORIES = 1_000_000
 
 
@@ -31,6 +33,16 @@ def positive_int(name: str, value: Any, *, maximum: int | None = None) -> int:
     return value
 
 
+def nonnegative_int(name: str, value: Any, *, maximum: int | None = None) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValidationError(f"{name} must be an integer.")
+    if value < 0:
+        raise ValidationError(f"{name} must be non-negative.")
+    if maximum is not None and value > maximum:
+        raise ValidationError(f"{name} must be <= {maximum}.")
+    return value
+
+
 def probability(name: str, value: Any) -> float:
     value = finite_real(name, value)
     if not 0.0 <= value <= 1.0:
@@ -47,9 +59,15 @@ def validate_qubit(name: str, q: Any, num_qubits: int) -> int:
 
 
 def estimate_statevector_bytes(num_qubits: int, dtype_bytes: int = 16) -> int:
-    positive_int("num_qubits", num_qubits)
-    positive_int("dtype_bytes", dtype_bytes)
-    return dtype_bytes * (1 << num_qubits)
+    positive_int("num_qubits", num_qubits, maximum=MAX_STATEVECTOR_QUBITS)
+    positive_int("dtype_bytes", dtype_bytes, maximum=ABSOLUTE_MAX_STATEVECTOR_BYTES)
+    required = dtype_bytes * (1 << num_qubits)
+    if required > ABSOLUTE_MAX_STATEVECTOR_BYTES:
+        raise ValidationError(
+            "Requested statevector exceeds the absolute memory safety limit: "
+            f"{required} bytes > {ABSOLUTE_MAX_STATEVECTOR_BYTES} bytes."
+        )
+    return required
 
 
 def validate_statevector_size(
@@ -57,7 +75,7 @@ def validate_statevector_size(
     *,
     max_bytes: int = DEFAULT_MAX_STATEVECTOR_BYTES,
 ) -> None:
-    positive_int("max_bytes", max_bytes)
+    positive_int("max_bytes", max_bytes, maximum=ABSOLUTE_MAX_STATEVECTOR_BYTES)
     required = estimate_statevector_bytes(num_qubits)
     if required > max_bytes:
         raise ValidationError(
@@ -113,8 +131,6 @@ def validate_processor_mapping(
         seen.add(pair)
         normalized.append(pair)
 
-    if not normalized:
-        raise ValidationError("coupling_map must contain at least one edge.")
     return tuple(normalized)
 
 
@@ -142,6 +158,8 @@ def validate_processor_mapping_dict(
         raise ValidationError(f"{label}.basis_gates must be a non-empty sequence.")
     if any(not isinstance(g, str) or not g.strip() for g in gates):
         raise ValidationError(f"{label}.basis_gates must contain non-empty strings.")
+    if len(set(gates)) != len(gates):
+        raise ValidationError(f"{label}.basis_gates must not contain duplicates.")
 
     ports = processor.get("ports")
     if ports is not None:

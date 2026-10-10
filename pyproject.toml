@@ -7,11 +7,16 @@ pythonpath = ["."]
 addopts = "-ra"
 testpaths = ["tests"]
 
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+select = ["E4", "E7", "E9", "F"]
+
 [project]
 name = "qff2026-s3-phase1"
-version = "0.2.0"
-description = "Qiskit Fall Fest 2026 Phase 1 S3 architecture-aware benchmarking scaffold"
-requires-python = ">=3.10,<3.14"
+version = "0.3.0"
+description = "Architecture-aware quantum benchmark implementation"
+requires-python = ">=3.11,<3.12"
 dependencies = [
   "numpy>=2.0,<3",
   "pandas>=2.0,<3",

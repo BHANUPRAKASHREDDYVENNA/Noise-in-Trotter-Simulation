@@ -13,6 +13,7 @@ from src.validation import (
     MAX_TRAJECTORIES,
     ValidationError,
     finite_real,
+    nonnegative_int,
     probability,
     positive_int,
     validate_processor_mapping,
@@ -77,6 +78,9 @@ def _validate_state(state: np.ndarray, n: int) -> None:
         raise ValidationError("Statevector shape does not match n_qubits.")
     if not np.iscomplexobj(state):
         raise ValidationError("Statevector must use a complex dtype.")
+    norm = float(np.linalg.norm(state))
+    if not np.isfinite(norm) or norm <= 0.0:
+        raise ValidationError("Statevector must have a finite, non-zero norm.")
 
 
 def _apply_rx(state: np.ndarray, q: int, theta: float, n: int) -> np.ndarray:
@@ -159,6 +163,10 @@ def apply_gate(state: np.ndarray, gate: Gate, n: int) -> np.ndarray:
 
 
 def swap_gate(q0: int, q1: int) -> tuple[Gate, Gate, Gate]:
+    validate_qubit("q0", q0, max(q0, q1) + 1)
+    validate_qubit("q1", q1, max(q0, q1) + 1)
+    if q0 == q1:
+        raise ValidationError("swap requires distinct qubits.")
     return (
         Gate("cx", (q0, q1), role="routing"),
         Gate("cx", (q1, q0), role="routing"),
@@ -171,10 +179,13 @@ def compile_practice(
     processor: PracticeProcessor,
 ) -> list[Gate]:
     compiled: list[Gate] = []
-    for gate in gates:
+    for index, gate in enumerate(gates):
+        if not isinstance(gate, Gate):
+            raise ValidationError(f"gates[{index}] must be a Gate instance.")
+        for q in gate.qubits:
+            validate_qubit(f"gates[{index}]", q, processor.num_qubits)
+
         if len(gate.qubits) == 1:
-            if gate.qubits[0] >= processor.num_qubits:
-                raise ValidationError("Gate targets a qubit outside processor capacity.")
             compiled.append(gate)
             continue
 
@@ -188,7 +199,9 @@ def compile_practice(
         forward_pairs = list(zip(path[:-2], path[1:-1]))
         for a, b in forward_pairs:
             compiled.extend(swap_gate(a, b))
-        compiled.append(Gate(gate.name, (path[-2], path[-1]), theta=gate.theta, role=gate.role))
+        compiled.append(
+            Gate(gate.name, (path[-2], path[-1]), theta=gate.theta, role=gate.role)
+        )
         for a, b in reversed(forward_pairs):
             compiled.extend(swap_gate(a, b))
     return compiled
@@ -228,7 +241,6 @@ def logical_trotter_circuit(
     ]
 
 
-
 def ideal_exact_state(
     n: int,
     total_time: float,
@@ -255,7 +267,8 @@ def ideal_exact_state(
     identity = sparse.identity(2, dtype=complex, format="csr")
     z = sparse.csr_matrix(PAULI_Z)
     x = sparse.csr_matrix(PAULI_X)
-    zz_ops = [z if qubit in set(interaction) else identity for qubit in range(n)]
+    interaction_set = set(interaction)
+    zz_ops = [z if qubit in interaction_set else identity for qubit in range(n)]
     x_ops = [x if qubit == field_qubit else identity for qubit in range(n)]
 
     def kron_chain(ops: list[sparse.spmatrix]) -> sparse.csr_matrix:
@@ -296,10 +309,12 @@ def _simulate_noisy_trajectory(
 
 
 def _z_expectation(state: np.ndarray, q: int, n: int) -> float:
+    validate_qubit("q", q, n)
     mask = 1 << (n - 1 - q)
     probabilities = np.abs(state) ** 2
     indices = np.arange(state.size)
-    return float(np.sum(probabilities * np.where((indices & mask) != 0, -1.0, 1.0)))
+    signs = np.where((indices & mask) != 0, -1.0, 1.0)
+    return float(np.sum(probabilities * signs))
 
 
 def run_noisy_trajectory(
@@ -321,7 +336,9 @@ def count_metrics(gates: Sequence[Gate], n: int) -> dict[str, float]:
     two_qubit = 0
     routing_two_qubit = 0
 
-    for gate in gates:
+    for index, gate in enumerate(gates):
+        if not isinstance(gate, Gate):
+            raise ValidationError(f"gates[{index}] must be a Gate instance.")
         if any(q >= n for q in gate.qubits):
             raise ValidationError("Gate references a qubit outside processor capacity.")
         layer = max((last_layer[q] for q in gate.qubits), default=0) + 1
@@ -367,6 +384,7 @@ def benchmark_processor(
     seed: int,
 ) -> dict[str, float]:
     positive_int("trajectories", trajectories, maximum=MAX_TRAJECTORIES)
+    nonnegative_int("seed", seed)
     _validate_state(exact_state, n)
 
     compiled = compile_practice(logical_gates, processor)

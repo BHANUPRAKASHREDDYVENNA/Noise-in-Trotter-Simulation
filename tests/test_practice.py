@@ -5,6 +5,7 @@ from pathlib import Path
 import sys
 
 import numpy as np
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -16,6 +17,7 @@ from src.practice_s3 import (
     ideal_exact_state,
     logical_trotter_circuit,
 )
+from src.validation import ValidationError
 
 
 def test_logical_trotter_builds():
@@ -35,6 +37,20 @@ def test_line_processor_adds_routing():
     routing_b = sum(g.role == "routing" for g in cb)
     assert routing_b > routing_a
     assert routing_b % 3 == 0
+
+
+def test_invalid_seed_is_rejected():
+    gates = logical_trotter_circuit(1, 0.2, 1.0, 0.7)
+    exact = ideal_exact_state(3, 0.2, 1.0, 0.7)
+    processor = PracticeProcessor("A", 3, ((0, 1), (1, 2)), 0, 0, 0)
+    with pytest.raises(ValidationError):
+        benchmark_processor(processor, gates, exact, 3, 1, -1)
+
+
+def test_non_gate_input_is_rejected():
+    processor = PracticeProcessor("A", 3, ((0, 1), (1, 2)), 0, 0, 0)
+    with pytest.raises(ValidationError):
+        compile_practice([object()], processor)
 
 
 def test_exact_state_is_normalized():

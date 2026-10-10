@@ -364,3 +364,14 @@ python scripts/validate_submission.py --official
 ~~~
 
 Practice validation checks the full runnable engineering scaffold and generated artifacts. Official validation intentionally fails closed until the organizer-supplied S3 Challenge Kit is integrated.
+
+
+## Production release gate
+
+The canonical end-to-end production verification command is:
+
+```bash
+python scripts/release_gate.py --strict-git
+```
+
+CI runs the same release gate against a pinned Python 3.11.17 dependency set. The gate covers security scanning, static analysis, compilation, notebook reproducibility, the full test suite, benchmark regeneration, repository validation, dependency vulnerability auditing, package builds and installed-wheel smoke testing.

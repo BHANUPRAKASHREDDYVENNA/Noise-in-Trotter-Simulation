@@ -4,6 +4,8 @@ import pytest
 
 from src.processors import interaction_swap_count, shortest_path
 from src.validation import (
+    ABSOLUTE_MAX_STATEVECTOR_BYTES,
+    MAX_STATEVECTOR_QUBITS,
     ValidationError,
     probability,
     validate_processor_mapping,
@@ -27,9 +29,23 @@ def test_duplicate_processor_edge_is_rejected():
         validate_processor_mapping(((0, 1), (1, 0)), 2)
 
 
+def test_single_qubit_processor_can_have_no_coupling_edges():
+    assert validate_processor_mapping((), 1) == ()
+
+
 def test_statevector_memory_guard():
     with pytest.raises(ValidationError):
         validate_statevector_size(30, max_bytes=1024)
+
+
+def test_statevector_hard_limit_blocks_extreme_qubit_counts():
+    with pytest.raises(ValidationError):
+        validate_statevector_size(MAX_STATEVECTOR_QUBITS + 1)
+
+
+def test_statevector_absolute_memory_limit_blocks_large_override():
+    with pytest.raises(ValidationError):
+        validate_statevector_size(25, max_bytes=ABSOLUTE_MAX_STATEVECTOR_BYTES + 1)
 
 
 def test_trotter_trajectory_limit():

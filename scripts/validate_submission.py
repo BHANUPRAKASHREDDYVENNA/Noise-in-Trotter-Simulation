@@ -31,6 +31,8 @@ BASE_REQUIRED = [
     "src/practice_s3.py",
     "src/validation.py",
     "report/report.md",
+    "requirements-ci.lock",
+    "requirements-quality.txt",
 ]
 
 WORKFLOW_FILES = [
@@ -40,9 +42,11 @@ WORKFLOW_FILES = [
     "scripts/make_practice_figures.py",
     "scripts/security_audit.py",
     "scripts/verify_notebook.py",
+    "scripts/release_gate.py",
     "tests/test_practice.py",
     "tests/test_validation.py",
     "tests/test_bell_benchmark.py",
+    "tests/test_metrics.py",
 ]
 
 
