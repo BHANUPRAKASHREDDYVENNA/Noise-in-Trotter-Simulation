@@ -309,15 +309,17 @@ public final class PolyglotService {
     }
 
     private static String jsonError(String message) {
-        return "{"error":"" + escapeJson(message) + ""}";
+        return "{\"error\":\"" + escapeJson(message) + "\"}";
     }
 
     static String escapeJson(String value) {
         if (value == null) {
             return "";
         }
-        return value.replace("\", "\\").replace(""", "\"").replace("
-", "\n").replace("", "\r");
+        return value.replace("\\", "\\\\")
+                    .replace("\"", "\\\"")
+                    .replace("\n", "\\n")
+                    .replace("\r", "\\r");
     }
 
     private static void runSelfTest() throws Exception {
