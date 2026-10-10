@@ -46,7 +46,8 @@ def verify() -> None:
     if not isinstance(cells, list) or not cells:
         raise SystemExit("Notebook has no cells.")
 
-    markdown = "\n".join(
+    markdown = "
+".join(
         "".join(cell.get("source", []))
         for cell in cells
         if cell.get("cell_type") == "markdown"
@@ -64,7 +65,11 @@ def verify() -> None:
                 raise SystemExit(f"Notebook code cell {index} is invalid: {exc}") from exc
 
     raw = NOTEBOOK.read_text(encoding="utf-8").lower()
-    forbidden = ("to" + "do", "fix" + "me", "implement " + "later")
+    forbidden = (
+        "to" + "do",
+        "fix" + "me",
+        "implement " + "later",
+    )
     hits = [marker for marker in forbidden if marker in raw]
     if hits:
         raise SystemExit("Notebook contains incomplete-work markers: " + ", ".join(hits))
