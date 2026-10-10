@@ -12,6 +12,7 @@ build/
 dist/
 *.egg-info/
 results/generated/
+results/figures/*.png
 # Keep example results; ignore temporary exports.
 .env
 .env.*
