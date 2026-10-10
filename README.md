@@ -89,6 +89,23 @@ This matches the folder/file organization explicitly recommended by the supplied
 
 ---
 
+
+## Official submission gate
+
+The repository intentionally separates practice scaffolding from the official competition benchmark. The Phase-1 instructions require the selected problem's Challenge Kit, exact Processor A/B definitions, the specified inputs/outputs, and measured A-vs-B results before the submission can be treated as official.
+
+Use the repository gate explicitly:
+
+```bash
+python scripts/validate_submission.py --practice
+
+python scripts/validate_submission.py --official
+```
+
+The --official check is deliberately strict. It requires a local Challenge Kit manifest, verifies that the referenced kit files exist, rejects illustrative/toy processor definitions, and confirms that the repository has been promoted from guide-derived settings to kit-derived settings.
+
+See docs/official_kit_integration.md for the exact integration sequence.
+
 ## Installation
 
 ### Standard Qiskit environment

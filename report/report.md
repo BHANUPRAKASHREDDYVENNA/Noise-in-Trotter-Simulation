@@ -43,3 +43,9 @@ Random seeds, shot/trajectory counts and processor JSON settings are recorded. F
 ## 11. Conclusions
 
 The project demonstrates the central Phase-1 principle: the same logical quantum solution can acquire different physical costs under different coupling graphs, and those architecture-induced differences can alter the observed quality of a noisy execution.
+
+## 12. Submission-readiness gate
+
+The current repository is practice-complete but kit-blocked. Continuous integration is green and the reproducible practice workflow, notebook structure, tests, metrics, figures and reporting scaffold are in place. The only remaining scientific substitution is the organizer-defined S3 Challenge Kit: its S3 instance, required outputs and exact Processor A/B definitions must replace the illustrative files before final competition results are generated.
+
+The official readiness validator is intentionally strict and will refuse to declare the repository submission-ready while any referenced processor/model remains illustrative or while the official kit manifest is missing. This prevents a false PASS.

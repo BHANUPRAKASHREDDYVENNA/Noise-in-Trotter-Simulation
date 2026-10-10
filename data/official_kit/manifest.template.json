@@ -1,0 +1,14 @@
+{
+  "kit_version": "<replace-with-organizer-kit-version>",
+  "source_files": [
+    "<relative-path-to-original-kit-file-1>",
+    "<relative-path-to-original-kit-file-2>"
+  ],
+  "s3_instance": "<relative-path-to-official-s3-instance>",
+  "processor_A": "<relative-path-to-official-processor-A-json>",
+  "processor_B": "<relative-path-to-official-processor-B-json>",
+  "required_outputs": [
+    "<metric-or-output-1>",
+    "<metric-or-output-2>"
+  ]
+}
