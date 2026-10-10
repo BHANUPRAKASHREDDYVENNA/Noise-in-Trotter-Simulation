@@ -6,4 +6,4 @@ jupyter==1.1.1
 nbformat==5.11.1
 qiskit==1.4.6
 qiskit-aer==0.17.2
-pytest==8.4.2
+pytest==9.1.1

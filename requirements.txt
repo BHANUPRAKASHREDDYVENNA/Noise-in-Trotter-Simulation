@@ -6,4 +6,4 @@ jupyter>=1,<2
 nbformat>=5.9,<6
 qiskit>=1.2,<2
 qiskit-aer>=0.15,<1
-pytest>=8,<9
+pytest>=9,<10
