@@ -59,11 +59,13 @@ BEFORE UPDATE ON jobs
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 
+DROP FUNCTION IF EXISTS create_job(TEXT, TEXT, INTEGER, SMALLINT);
+
 CREATE OR REPLACE FUNCTION create_job(
     p_idempotency_key TEXT,
     p_task TEXT,
     p_work_units INTEGER,
-    p_max_attempts SMALLINT DEFAULT 3
+    p_max_attempts INTEGER DEFAULT 3
 )
 RETURNS TABLE (
     job_id UUID,
