@@ -18,8 +18,12 @@ jobs:
           cache-dependency-path: requirements-practice.txt
       - name: Install practice dependencies
         run: python -m pip install -r requirements-practice.txt
+      - name: Compile Python sources
+        run: python -m compileall -q src scripts tests
       - name: Run tests
         run: pytest -q
+      - name: Run illustrative Bell benchmark
+        run: python scripts/run_bell_benchmark.py
       - name: Run practice benchmark
         run: python scripts/run_practice.py
       - name: Validate repository structure

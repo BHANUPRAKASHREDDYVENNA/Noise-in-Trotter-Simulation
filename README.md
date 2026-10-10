@@ -19,12 +19,14 @@ The implementation follows the online Phase-1 workflow described in the supplied
 
 The supplied guide does not define a complete S3 Hamiltonian, Trotter order, or final S3-specific instance. To keep the repository runnable without inventing organizer-specific data, the project contains:
 
-- a **PDF-derived architecture benchmark** using the guide's explicit Bell-state, routing, noise and measurement examples;
+- a **guide-inspired Bell practice benchmark** using the guide's Bell-state and measurement concepts; its processor graphs, noise rates and routing overhead are locally illustrative, not a recreation of the official Processor A/B models;
 - a **minimal Trotter demonstrator** whose parameters are documented as an illustrative research model, not as an organizer-defined benchmark;
 - an **optional Qiskit/Aer path** matching the code style shown in the guide;
 - machine-readable results and figures that can be regenerated.
 
 No demonstrator result is claimed as an official competition result.
+
+> **Competition-readiness warning:** the current processor JSON files are local illustrative practice models, not the official Processor A/B definitions. The supplied geometry-aware challenge presentation describes Processor A as 5 qubits and Processor B as 7 qubits with a heavy-hex-inspired graph; this repository's practice models are both 5 qubits and use fully-connected/line graphs. Do not submit practice metrics as the required official A/B results. Replace the practice models only when the organizer-provided S3 Challenge Kit supplies the exact processor definitions, S3 instance, required outputs, and benchmark fields.
 
 ---
 
@@ -123,7 +125,7 @@ pip install -r requirements-practice.txt
 
 ---
 
-## Run the PDF-derived Bell architecture benchmark
+## Run the guide-inspired Bell practice benchmark
 
 ```bash
 python scripts/run_bell_benchmark.py
