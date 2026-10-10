@@ -3,6 +3,8 @@
 
 This repository is a Phase-1 online implementation built from the **Qiskit Fall Fest 2026 Phase 1 Quantum Processor & Architecture Starter Notebook** supplied with this project.
 
+> **Phase-1 boundary:** the common benchmark is S3 on Processor A and Processor B. Bell-correlation/protection material in this repository is auxiliary offline-study code and is not a Phase-1 common-benchmark result.
+
 ### Scope
 
 The implementation follows the online Phase-1 workflow described in the supplied guide:
@@ -148,7 +150,7 @@ pip install -r requirements-practice.txt
 python scripts/run_bell_benchmark.py
 ```
 
-This benchmark follows the guide's explicit Bell-state workflow and reports:
+This auxiliary study follows the guide's Bell-state and measurement concepts for engineering practice only. It is not part of the Phase-1 S3 A/B common benchmark and must not be presented as the online competition result. It reports:
 
 - XX correlation
 - YY correlation
@@ -261,10 +263,9 @@ results/figures/
 Example table files:
 
 ```text
-processor_A_metrics.csv
-processor_B_metrics.csv
-AB_comparison.csv
-final_comparison.csv
+practice_ab_comparison.csv
+practice_processor_A_metrics.csv
+practice_processor_B_metrics.csv
 ```
 
 Example figures:

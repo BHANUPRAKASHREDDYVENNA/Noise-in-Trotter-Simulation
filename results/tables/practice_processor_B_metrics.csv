@@ -1,2 +1,2 @@
-physical_qubits,depth,two_qubit_gate_count,swap_count,rzz_count,rx_count,cx_count,mean_fidelity,fidelity_std,trajectories,processor,processor_name
-3.0,32.0,28.0,8.0,4.0,4.0,24.0,0.7559020490389096,0.40986285452878285,2000.0,B,practice_line_3q
+physical_qubits,depth,two_qubit_gate_count,swap_count,routing_two_qubit_gate_count,algorithmic_two_qubit_gate_count,mean_fidelity,fidelity_std,fidelity_stderr,mean_z0_expectation,z0_expectation_std,measured_z0_expectation,measured_z0_expectation_std,trajectories,processor,processor_name
+3.0,32.0,28.0,8.0,24.0,4.0,0.7559020490389092,0.4098628545287831,0.009164812041784666,0.3518263610896887,0.48131468076077066,0.34971540292315045,0.4784267926762058,2000.0,B,practice_line_3q
