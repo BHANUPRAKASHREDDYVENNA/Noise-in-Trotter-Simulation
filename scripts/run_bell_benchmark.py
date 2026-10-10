@@ -55,8 +55,7 @@ def main() -> None:
     comparison.to_csv(RESULTS / "AB_comparison.csv", index=False)
 
     print(df.to_string(index=False))
-    print("
-Saved:", RESULTS / "bell_processor_metrics.csv")
+    print("\nSaved:", RESULTS / "bell_processor_metrics.csv")
     print("Saved:", RESULTS / "AB_comparison.csv")
 
 
