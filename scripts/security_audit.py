@@ -45,9 +45,9 @@ def main() -> None:
                 break
 
     if violations:
-        raise SystemExit("Security audit failed:
-- " + "
-- ".join(sorted(set(violations))))
+        raise SystemExit(
+            "Security audit failed:\n- " + "\n- ".join(sorted(set(violations)))
+        )
 
     print("Security audit passed.")
 
