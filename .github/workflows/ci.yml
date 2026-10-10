@@ -79,3 +79,5 @@ jobs:
 
       - name: Final security audit
         run: python scripts/security_audit.py
+
+# Hardened CI: full dependency path, reproducibility checks, and concurrency controls.
