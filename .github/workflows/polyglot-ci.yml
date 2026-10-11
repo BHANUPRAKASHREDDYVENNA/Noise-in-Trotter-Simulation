@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 20
     services:
       postgres:
-        image: postgres:16
+        image: postgres:16@sha256:ca0bd484cb98bf4b24eb1010e73fb3fcbd6714d240fbc1a10eea5b7dbecb641d
         env:
           POSTGRES_DB: polyglot
           POSTGRES_USER: polyglot
@@ -47,15 +47,15 @@ jobs:
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Set up Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: "3.11.17"
 
       - name: Set up Java
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
         with:
           distribution: temurin
           java-version: "17"
@@ -121,14 +121,42 @@ jobs:
           cat /tmp/polyglot-java.log
           exit 1
 
+      - name: Verify Java idempotency contract
+        run: |
+          first_status="$(
+            curl --silent --show-error               --output /tmp/idempotent-1.json               --write-out '%{http_code}'               -X POST http://127.0.0.1:8080/v1/jobs               -H 'Content-Type: application/x-www-form-urlencoded'               --data 'idempotency_key=ci-idempotency-key&task=ci_idempotent&work_units=5&max_attempts=2'
+          )"
+          test "$first_status" = "201"
+
+          second_status="$(
+            curl --silent --show-error               --output /tmp/idempotent-2.json               --write-out '%{http_code}'               -X POST http://127.0.0.1:8080/v1/jobs               -H 'Content-Type: application/x-www-form-urlencoded'               --data 'idempotency_key=ci-idempotency-key&task=ci_idempotent&work_units=5&max_attempts=2'
+          )"
+          test "$second_status" = "200"
+
+          conflict_status="$(
+            curl --silent --show-error               --output /tmp/idempotent-conflict.json               --write-out '%{http_code}'               -X POST http://127.0.0.1:8080/v1/jobs               -H 'Content-Type: application/x-www-form-urlencoded'               --data 'idempotency_key=ci-idempotency-key&task=ci_conflict&work_units=5&max_attempts=2'
+          )"
+          test "$conflict_status" = "409"
+
       - name: Run C++ worker and Python async orchestration end-to-end
         run: |
+          worker_pid=""
+          cleanup_worker() {
+            if test -n "$worker_pid" && kill -0 "$worker_pid" 2>/dev/null; then
+              kill "$worker_pid" 2>/dev/null || true
+              wait "$worker_pid" 2>/dev/null || true
+            fi
+          }
+          trap cleanup_worker EXIT
+
           build/polyglot/polyglot_worker \
             --dsn "host=127.0.0.1 port=5432 dbname=polyglot user=polyglot password=polyglot connect_timeout=3" \
-            --worker-id ci-worker --threads 4 --queue-capacity 32 --jobs 8 --poll-ms 100 > /tmp/polyglot-worker.log 2>&1 &
+            --worker-id ci-worker --threads 4 --queue-capacity 32 --jobs 9 --poll-ms 100 > /tmp/polyglot-worker.log 2>&1 &
           worker_pid=$!
+
           python3 polyglot/python/orchestrator.py --base-url http://127.0.0.1:8080 --jobs 8
           wait "$worker_pid"
+          worker_pid=""
           cat /tmp/polyglot-worker.log
 
       - name: Verify persisted results

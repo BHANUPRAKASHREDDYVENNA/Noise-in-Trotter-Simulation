@@ -4,11 +4,11 @@ This subsystem assigns each language to a distinct production layer and joins th
 
 ## Architecture
 
-- SQL / PostgreSQL: normalized job persistence, uniqueness, lifecycle constraints, indexes, and atomic functions. `claim_next_job()` uses row-level `FOR UPDATE SKIP LOCKED`.
+- SQL / PostgreSQL: normalized job persistence, uniqueness, lifecycle constraints, indexes, atomic functions, fenced UUID leases, and idempotent completion. `claim_next_job()` uses row-level `FOR UPDATE SKIP LOCKED`.
 - C11: fixed-capacity, thread-safe `uint64_t` bounded queue with timed operations, close semantics, and NULL validation.
 - C++20: concurrent PostgreSQL-backed worker engine with RAII, smart pointers, `shared_mutex`, atomics, bounded back-pressure, and per-thread database connections.
-- Java 17: HTTP domain service with immutable records, checked SQL failures, bounded JDBC pooling, `ConcurrentHashMap` idempotency caching, strict request validation, and bounded request bodies.
-- Python 3.11: asyncio orchestration with concurrent submission/polling, retries, deadlines, and strict response validation.
+- Java 17: HTTP domain service with immutable records, checked SQL failures, bounded JDBC pooling, parameter-aware `ConcurrentHashMap` idempotency caching, strict request validation, bounded request bodies, and graceful executor shutdown.
+- Python 3.11: asyncio orchestration with concurrent submission/polling, transient-only retries, deadline propagation, and strict response validation.
 
 Runtime flow:
 
@@ -29,7 +29,7 @@ C with sanitizers:
 
 ```bash
 mkdir -p build/polyglot
-cc -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -pthread \
+gcc -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -pthread \
   -fsanitize=address,undefined -fno-omit-frame-pointer \
   -Ipolyglot/c -c polyglot/c/bounded_queue.c -o build/polyglot/bounded_queue_san.o
 cc -std=c11 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -pthread \
@@ -93,4 +93,4 @@ psql "$POLYGLOT_DATABASE_URL" -c \
   "SELECT task, status, attempt_count, result_checksum FROM jobs WHERE task LIKE 'cpu_task_%' ORDER BY task;"
 ```
 
-The repository also contains a GitHub Actions integration workflow at `.github/workflows/polyglot-ci.yml` that starts PostgreSQL and verifies the complete cross-language pipeline.
+The integration workflow at `.github/workflows/polyglot-ci.yml` starts a digest-pinned PostgreSQL service, verifies SQL lease fencing, verifies Java idempotency/conflict behavior, sanitizer-tests the C queue, builds the C++ worker, self-tests Java and Python, and executes the full cross-language pipeline.
