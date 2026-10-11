@@ -1,7 +1,7 @@
 \set ON_ERROR_STOP on
 BEGIN;
 
-DO $
+DO $polyglot$
 DECLARE
     j RECORD;
     claimed RECORD;
@@ -33,9 +33,9 @@ BEGIN
         RAISE EXCEPTION 'completed job state is incorrect';
     END IF;
 END
-$$;
+$polyglot$;
 
-DO $$
+DO $polyglot$
 DECLARE
     job_row RECORD;
     first_claim RECORD;
@@ -73,9 +73,9 @@ BEGIN
         RAISE EXCEPTION 'current lease completion failed';
     END IF;
 END
-$$;
+$polyglot$;
 
-DO $$
+DO $polyglot$
 BEGIN
     BEGIN
         PERFORM create_job('sql-verify-invalid', 'bad task!', 1, 1);
@@ -84,7 +84,7 @@ BEGIN
         NULL;
     END;
 END
-$$;
+$polyglot$;
 
 ROLLBACK;
 
