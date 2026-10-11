@@ -205,9 +205,19 @@ class PolyglotApiClient:
         checksum = payload.get("result_checksum")
         if not isinstance(job_id, str) or not isinstance(task, str) or not isinstance(status, str):
             raise ApiError("job response contains invalid string fields")
-        if not isinstance(attempts, int) or attempts < 0:
+        try:
+            uuid.UUID(job_id)
+        except ValueError as error:
+            raise ApiError("job response contains invalid job_id") from error
+        if not task or len(task) > 64 or not all(ch.isalnum() or ch in "._-" for ch in task):
+            raise ApiError("job response contains invalid task")
+        if status not in {"PENDING", "RUNNING", "COMPLETED", "FAILED"}:
+            raise ApiError("job response contains invalid status")
+        if not isinstance(attempts, int) or not 0 <= attempts <= 10_000_000:
             raise ApiError("job response contains invalid attempt_count")
-        if checksum is not None and not isinstance(checksum, int):
+        if checksum is not None and (
+            not isinstance(checksum, int) or not 0 <= checksum <= 9_223_372_036_854_775_807
+        ):
             raise ApiError("job response contains invalid result_checksum")
         return JobResult(job_id, task, status, attempts, checksum)
 
