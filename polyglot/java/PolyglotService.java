@@ -50,7 +50,7 @@ public final class PolyglotService {
 
         String host = "127.0.0.1";
         int port = 8080;
-        String jdbcUrl = envOrDefault("POLYGLOT_JDBC_URL", "jdbc:postgresql://127.0.0.1:5432/polyglot");
+        String jdbcUrl = envOrDefault("POLYGLOT_JDBC_URL", "jdbc:postgresql://127.0.0.1:5432/polyglot?connectTimeout=3&socketTimeout=5000");
         String dbUser = envOrDefault("POLYGLOT_DB_USER", "polyglot");
         String dbPassword = envOrDefault("POLYGLOT_DB_PASSWORD", "polyglot");
         int poolSize = 8;
