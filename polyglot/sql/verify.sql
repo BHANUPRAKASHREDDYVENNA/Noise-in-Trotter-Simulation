@@ -1,7 +1,7 @@
 \set ON_ERROR_STOP on
 BEGIN;
 
-DO $$$
+DO $
 DECLARE
     j RECORD;
     claimed RECORD;
