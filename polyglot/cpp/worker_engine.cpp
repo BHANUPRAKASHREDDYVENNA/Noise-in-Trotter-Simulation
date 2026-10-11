@@ -6,6 +6,7 @@
 #include <chrono>
 #include <csignal>
 #include <cstdint>
+#include <cctype>
 #include <cstring>
 #include <exception>
 #include <iostream>
@@ -186,6 +187,14 @@ public:
         : options_(std::move(options)),
           queue_(bb_queue_create(options_.queue_capacity)) {
         if (options_.dsn.empty()) throw std::invalid_argument("--dsn is required");
+        if (options_.worker_id.empty() || options_.worker_id.size() > 48U) {
+            throw std::invalid_argument("--worker-id must be between 1 and 48 characters");
+        }
+        for (const unsigned char character : options_.worker_id) {
+            if (!(std::isalnum(character) || character == '_' || character == '-' || character == '.')) {
+                throw std::invalid_argument("--worker-id contains unsupported characters");
+            }
+        }
         if (options_.threads == 0U || options_.threads > 64U) {
             throw std::invalid_argument("--threads must be between 1 and 64");
         }
