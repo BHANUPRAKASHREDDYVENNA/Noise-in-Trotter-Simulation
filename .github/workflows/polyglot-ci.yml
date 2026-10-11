@@ -121,6 +121,17 @@ jobs:
           cat /tmp/polyglot-java.log
           exit 1
 
+      - name: Verify Java idempotency contract
+        run: |
+          first_status="$(curl --silent --show-error --output /tmp/idempotent-1.json --write-out '%{http_code}'             -X POST http://127.0.0.1:8080/v1/jobs             -H 'Content-Type: application/x-www-form-urlencoded'             --data 'idempotency_key=ci-idempotency-key&task=ci_idempotent&work_units=5&max_attempts=2')"
+          test "$first_status" = "201"
+
+          second_status="$(curl --silent --show-error --output /tmp/idempotent-2.json --write-out '%{http_code}'             -X POST http://127.0.0.1:8080/v1/jobs             -H 'Content-Type: application/x-www-form-urlencoded'             --data 'idempotency_key=ci-idempotency-key&task=ci_idempotent&work_units=5&max_attempts=2')"
+          test "$second_status" = "200"
+
+          conflict_status="$(curl --silent --show-error --output /tmp/idempotent-conflict.json --write-out '%{http_code}'             -X POST http://127.0.0.1:8080/v1/jobs             -H 'Content-Type: application/x-www-form-urlencoded'             --data 'idempotency_key=ci-idempotency-key&task=ci_conflict&work_units=5&max_attempts=2')"
+          test "$conflict_status" = "409"
+
       - name: Run C++ worker and Python async orchestration end-to-end
         run: |
           worker_pid=""
