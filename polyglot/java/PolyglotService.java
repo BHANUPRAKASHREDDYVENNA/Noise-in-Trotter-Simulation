@@ -90,6 +90,11 @@ public final class PolyglotService {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             server.stop(0);
             executor.shutdownNow();
+            try {
+                executor.awaitTermination(5, TimeUnit.SECONDS);
+            } catch (InterruptedException error) {
+                Thread.currentThread().interrupt();
+            }
             pool.close();
             shutdown.countDown();
         }, "polyglot-shutdown"));
