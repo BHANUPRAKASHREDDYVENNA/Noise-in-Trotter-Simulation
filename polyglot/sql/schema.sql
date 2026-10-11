@@ -286,6 +286,7 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
     current_row jobs%ROWTYPE;
+    current_status job_status;
     next_status job_status;
     delay_seconds INTEGER;
 BEGIN
@@ -305,6 +306,15 @@ BEGIN
     FOR UPDATE;
 
     IF NOT FOUND THEN
+        SELECT status INTO current_status
+        FROM jobs
+        WHERE job_id = p_job_id
+        FOR UPDATE;
+
+        IF current_status = 'COMPLETED' THEN
+            RETURN 'COMPLETED'::job_status;
+        END IF;
+
         RAISE EXCEPTION USING ERRCODE = '55000', MESSAGE = 'job is not owned by worker or lease is stale';
     END IF;
 
