@@ -30,7 +30,7 @@ static int timespec_after_ms(struct timespec *deadline, uint32_t timeout_ms) {
     if (deadline == NULL) {
         return EINVAL;
     }
-    if (clock_gettime(CLOCK_REALTIME, &now) != 0) {
+    if (clock_gettime(CLOCK_MONOTONIC, &now) != 0) {
         return errno == 0 ? EIO : errno;
     }
     deadline->tv_sec = now.tv_sec + (time_t)(timeout_ms / 1000U);
@@ -72,19 +72,40 @@ bb_queue_t *bb_queue_create(size_t capacity) {
         free(queue);
         return NULL;
     }
-    if (pthread_cond_init(&queue->impl.not_empty, NULL) != 0) {
+
+    pthread_condattr_t cond_attr;
+    if (pthread_condattr_init(&cond_attr) != 0) {
         pthread_mutex_destroy(&queue->impl.mutex);
         free(queue->impl.items);
         free(queue);
         return NULL;
     }
-    if (pthread_cond_init(&queue->impl.not_full, NULL) != 0) {
+
+    if (pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC) != 0) {
+        pthread_condattr_destroy(&cond_attr);
+        pthread_mutex_destroy(&queue->impl.mutex);
+        free(queue->impl.items);
+        free(queue);
+        return NULL;
+    }
+
+    if (pthread_cond_init(&queue->impl.not_empty, &cond_attr) != 0) {
+        pthread_condattr_destroy(&cond_attr);
+        pthread_mutex_destroy(&queue->impl.mutex);
+        free(queue->impl.items);
+        free(queue);
+        return NULL;
+    }
+    if (pthread_cond_init(&queue->impl.not_full, &cond_attr) != 0) {
         pthread_cond_destroy(&queue->impl.not_empty);
+        pthread_condattr_destroy(&cond_attr);
         pthread_mutex_destroy(&queue->impl.mutex);
         free(queue->impl.items);
         free(queue);
         return NULL;
     }
+
+    pthread_condattr_destroy(&cond_attr);
     return queue;
 }
 
