@@ -44,6 +44,7 @@ struct Job {
     std::uint64_t sequence{};
     std::string job_id;
     std::string task;
+    std::string lease_token;
     int work_units{};
     int attempt_count{};
 };
@@ -90,10 +91,13 @@ PgConn connect_db(const std::string &dsn, const std::string &application_name) {
                                                : "unable to allocate PostgreSQL connection";
         throw std::runtime_error("PostgreSQL connection failed: " + message);
     }
-    const std::string app_sql = "SET application_name = '" + application_name + "'";
-    PgResult app_result(PQexec(connection.get(), app_sql.c_str()));
-    if (!app_result || PQresultStatus(app_result.get()) != PGRES_COMMAND_OK) {
-        throw std::runtime_error("PostgreSQL SET application_name failed: "
+    const char *app_values[] = {application_name.c_str()};
+    PgResult app_result(PQexecParams(
+        connection.get(),
+        "SELECT set_config('application_name', $1, false)",
+        1, nullptr, app_values, nullptr, nullptr, 0));
+    if (!app_result || PQresultStatus(app_result.get()) != PGRES_TUPLES_OK) {
+        throw std::runtime_error("PostgreSQL application_name configuration failed: "
                                  + std::string(PQerrorMessage(connection.get())));
     }
     PgResult timeout_result(PQexec(connection.get(), "SET statement_timeout = '5000ms'"));
@@ -114,7 +118,7 @@ void ensure_ok(PGresult *result, ExecStatusType expected, PGconn *connection, co
 std::optional<Job> claim_next_job(PGconn *connection, const std::string &worker_id, std::uint64_t sequence) {
     const char *values[] = {worker_id.c_str()};
     PgResult result(PQexecParams(connection,
-                                 "SELECT job_id::text, task, work_units, attempt_count "
+                                 "SELECT job_id::text, task, lease_token::text, work_units, attempt_count "
                                  "FROM claim_next_job($1)",
                                  1, nullptr, values, nullptr, nullptr, 0));
     ensure_ok(result.get(), PGRES_TUPLES_OK, connection, "claim_next_job");
@@ -124,17 +128,23 @@ std::optional<Job> claim_next_job(PGconn *connection, const std::string &worker_
     job.sequence = sequence;
     job.job_id = PQgetvalue(result.get(), 0, 0);
     job.task = PQgetvalue(result.get(), 0, 1);
-    job.work_units = std::stoi(PQgetvalue(result.get(), 0, 2));
-    job.attempt_count = std::stoi(PQgetvalue(result.get(), 0, 3));
+    job.lease_token = PQgetvalue(result.get(), 0, 2);
+    job.work_units = std::stoi(PQgetvalue(result.get(), 0, 3));
+    job.attempt_count = std::stoi(PQgetvalue(result.get(), 0, 4));
     return job;
 }
 
 void complete_job(PGconn *connection, const Job &job, const std::string &worker_id, std::uint64_t checksum) {
     const std::string checksum_text = std::to_string(checksum);
-    const char *values[] = {job.job_id.c_str(), worker_id.c_str(), checksum_text.c_str()};
+    const char *values[] = {
+        job.job_id.c_str(),
+        worker_id.c_str(),
+        job.lease_token.c_str(),
+        checksum_text.c_str()
+    };
     PgResult result(PQexecParams(connection,
-                                 "SELECT complete_job($1::uuid, $2, $3::bigint)",
-                                 3, nullptr, values, nullptr, nullptr, 0));
+                                 "SELECT complete_job($1::uuid, $2, $3::uuid, $4::bigint)",
+                                 4, nullptr, values, nullptr, nullptr, 0));
     ensure_ok(result.get(), PGRES_TUPLES_OK, connection, "complete_job");
     if (PQntuples(result.get()) != 1 || std::strcmp(PQgetvalue(result.get(), 0, 0), "t") != 0) {
         throw std::runtime_error("complete_job returned an unexpected result");
@@ -142,10 +152,15 @@ void complete_job(PGconn *connection, const Job &job, const std::string &worker_
 }
 
 void fail_job(PGconn *connection, const Job &job, const std::string &worker_id, const std::string &error) {
-    const char *values[] = {job.job_id.c_str(), worker_id.c_str(), error.c_str()};
+    const char *values[] = {
+        job.job_id.c_str(),
+        worker_id.c_str(),
+        job.lease_token.c_str(),
+        error.c_str()
+    };
     PgResult result(PQexecParams(connection,
-                                 "SELECT fail_job($1::uuid, $2, $3)",
-                                 3, nullptr, values, nullptr, nullptr, 0));
+                                 "SELECT fail_job($1::uuid, $2, $3::uuid, $4)",
+                                 4, nullptr, values, nullptr, nullptr, 0));
     ensure_ok(result.get(), PGRES_TUPLES_OK, connection, "fail_job");
 }
 
@@ -189,7 +204,8 @@ public:
     }
 
     static int self_test() {
-        Job job{1U, "00000000-0000-0000-0000-000000000001", "self_test", 3, 1};
+        Job job{1U, "00000000-0000-0000-0000-000000000001", "self_test",
+                "00000000-0000-0000-0000-000000000002", 3, 1};
         const std::uint64_t a = execute_job(job);
         const std::uint64_t b = execute_job(job);
         if (a != b || a == 0U || a > 0x7FFFFFFFFFFFFFFFULL) {
