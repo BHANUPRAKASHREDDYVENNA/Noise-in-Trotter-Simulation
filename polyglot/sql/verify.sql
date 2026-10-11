@@ -1,7 +1,7 @@
 \set ON_ERROR_STOP on
 BEGIN;
 
-DO $$
+DO $$$
 DECLARE
     j RECORD;
     claimed RECORD;
@@ -35,7 +35,7 @@ BEGIN
 END
 $$;
 
-DO $
+DO $$
 DECLARE
     job_row RECORD;
     first_claim RECORD;
@@ -73,9 +73,9 @@ BEGIN
         RAISE EXCEPTION 'current lease completion failed';
     END IF;
 END
-$;
+$$;
 
-DO $
+DO $$
 BEGIN
     BEGIN
         PERFORM create_job('sql-verify-invalid', 'bad task!', 1, 1);
