@@ -46,24 +46,14 @@ SET lease_token = gen_random_uuid()
 WHERE status = 'RUNNING'
   AND lease_token IS NULL;
 
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pg_constraint
-        WHERE conname = 'jobs_running_lock_ck'
-          AND conrelid = 'jobs'::regclass
-    ) THEN
-        ALTER TABLE jobs
-            ADD CONSTRAINT jobs_running_lock_ck CHECK (
-                (status = 'RUNNING' AND locked_by IS NOT NULL AND locked_at IS NOT NULL AND lease_token IS NOT NULL)
-                OR
-                (status <> 'RUNNING' AND locked_by IS NULL AND locked_at IS NULL AND lease_token IS NULL)
-            ) NOT VALID;
-        ALTER TABLE jobs VALIDATE CONSTRAINT jobs_running_lock_ck;
-    END IF;
-END
-$$;
+ALTER TABLE jobs DROP CONSTRAINT IF EXISTS jobs_running_lock_ck;
+
+ALTER TABLE jobs
+    ADD CONSTRAINT jobs_running_lock_ck CHECK (
+        (status = 'RUNNING' AND locked_by IS NOT NULL AND locked_at IS NOT NULL AND lease_token IS NOT NULL)
+        OR
+        (status <> 'RUNNING' AND locked_by IS NULL AND locked_at IS NULL AND lease_token IS NULL)
+    );
 
 CREATE INDEX IF NOT EXISTS jobs_pending_idx
     ON jobs (available_at, created_at, job_id)
