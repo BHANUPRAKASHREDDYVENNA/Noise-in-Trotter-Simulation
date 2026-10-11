@@ -36,8 +36,11 @@ typedef struct {
 static void *producer(void *arg) {
     thread_args_t *args = arg;
     for (uint64_t i = 1U; i <= 1000U; ++i) {
-        while (bb_queue_push(args->queue, i, 1000U) == BB_TIMEOUT) {
-        }
+        bb_status_t status;
+        do {
+            status = bb_queue_push(args->queue, i, 1000U);
+        } while (status == BB_TIMEOUT);
+        assert(status == BB_OK);
     }
     bb_queue_close(args->queue);
     return NULL;
