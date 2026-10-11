@@ -35,7 +35,47 @@ BEGIN
 END
 $$;
 
-DO $$
+DO $
+DECLARE
+    job_row RECORD;
+    first_claim RECORD;
+    second_claim RECORD;
+BEGIN
+    SELECT * INTO job_row
+    FROM create_job('sql-verify-fencing', 'fencing_task', 5, 3);
+
+    SELECT * INTO first_claim
+    FROM claim_next_job('sql-fencer-a');
+
+    UPDATE jobs
+    SET locked_at = clock_timestamp() - INTERVAL '120 seconds'
+    WHERE job_id = job_row.job_id;
+
+    IF requeue_stale_jobs(60) <> 1 THEN
+        RAISE EXCEPTION 'stale lease recovery failed';
+    END IF;
+
+    SELECT * INTO second_claim
+    FROM claim_next_job('sql-fencer-b');
+
+    IF second_claim.lease_token IS NULL OR second_claim.lease_token = first_claim.lease_token THEN
+        RAISE EXCEPTION 'lease token was not replaced';
+    END IF;
+
+    BEGIN
+        PERFORM complete_job(job_row.job_id, 'sql-fencer-a', first_claim.lease_token, 99);
+        RAISE EXCEPTION 'stale lease was accepted';
+    EXCEPTION WHEN SQLSTATE '55000' THEN
+        NULL;
+    END;
+
+    IF NOT complete_job(job_row.job_id, 'sql-fencer-b', second_claim.lease_token, 100) THEN
+        RAISE EXCEPTION 'current lease completion failed';
+    END IF;
+END
+$;
+
+DO $
 BEGIN
     BEGIN
         PERFORM create_job('sql-verify-invalid', 'bad task!', 1, 1);
