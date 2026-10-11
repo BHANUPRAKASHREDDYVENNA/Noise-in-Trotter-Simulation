@@ -123,9 +123,6 @@ jobs:
 
       - name: Run C++ worker and Python async orchestration end-to-end
         run: |
-          build/polyglot/polyglot_worker \
-            --dsn "host=127.0.0.1 port=5432 dbname=polyglot user=polyglot password=polyglot connect_timeout=3" \
-            --worker-id ci-worker --threads 4 --queue-capacity 32 --jobs 8 --poll-ms 100 > /tmp/polyglot-worker.log 2>&1 &
           worker_pid=""
           cleanup_worker() {
             if test -n "$worker_pid" && kill -0 "$worker_pid" 2>/dev/null; then
@@ -135,7 +132,9 @@ jobs:
           }
           trap cleanup_worker EXIT
 
-          build/polyglot/polyglot_worker             --dsn "host=127.0.0.1 port=5432 dbname=polyglot user=polyglot password=polyglot connect_timeout=3"             --worker-id ci-worker --threads 4 --queue-capacity 32 --jobs 8 --poll-ms 100 > /tmp/polyglot-worker.log 2>&1 &
+          build/polyglot/polyglot_worker \
+            --dsn "host=127.0.0.1 port=5432 dbname=polyglot user=polyglot password=polyglot connect_timeout=3" \
+            --worker-id ci-worker --threads 4 --queue-capacity 32 --jobs 8 --poll-ms 100 > /tmp/polyglot-worker.log 2>&1 &
           worker_pid=$!
 
           python3 polyglot/python/orchestrator.py --base-url http://127.0.0.1:8080 --jobs 8
