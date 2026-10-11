@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     available_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
     locked_by VARCHAR(128),
     locked_at TIMESTAMPTZ,
+    lease_token UUID,
     result_checksum BIGINT,
     last_error TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
@@ -31,11 +32,38 @@ CREATE TABLE IF NOT EXISTS jobs (
     CONSTRAINT jobs_max_attempts_ck CHECK (max_attempts BETWEEN 1 AND 10),
     CONSTRAINT jobs_attempt_count_ck CHECK (attempt_count BETWEEN 0 AND 10000000),
     CONSTRAINT jobs_running_lock_ck CHECK (
-        (status = 'RUNNING' AND locked_by IS NOT NULL AND locked_at IS NOT NULL)
+        (status = 'RUNNING' AND locked_by IS NOT NULL AND locked_at IS NOT NULL AND lease_token IS NOT NULL)
         OR
-        (status <> 'RUNNING' AND locked_by IS NULL AND locked_at IS NULL)
+        (status <> 'RUNNING' AND locked_by IS NULL AND locked_at IS NULL AND lease_token IS NULL)
     )
 );
+
+ALTER TABLE jobs
+    ADD COLUMN IF NOT EXISTS lease_token UUID;
+
+UPDATE jobs
+SET lease_token = gen_random_uuid()
+WHERE status = 'RUNNING'
+  AND lease_token IS NULL;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'jobs_running_lock_ck'
+          AND conrelid = 'jobs'::regclass
+    ) THEN
+        ALTER TABLE jobs
+            ADD CONSTRAINT jobs_running_lock_ck CHECK (
+                (status = 'RUNNING' AND locked_by IS NOT NULL AND locked_at IS NOT NULL AND lease_token IS NOT NULL)
+                OR
+                (status <> 'RUNNING' AND locked_by IS NULL AND locked_at IS NULL AND lease_token IS NULL)
+            ) NOT VALID;
+        ALTER TABLE jobs VALIDATE CONSTRAINT jobs_running_lock_ck;
+    END IF;
+END
+$$;
 
 CREATE INDEX IF NOT EXISTS jobs_pending_idx
     ON jobs (available_at, created_at, job_id)
@@ -61,6 +89,7 @@ FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 
 DROP FUNCTION IF EXISTS create_job(TEXT, TEXT, INTEGER, SMALLINT);
+DROP FUNCTION IF EXISTS create_job(TEXT, TEXT, INTEGER, INTEGER);
 
 CREATE OR REPLACE FUNCTION create_job(
     p_idempotency_key TEXT,
@@ -79,6 +108,7 @@ RETURNS TABLE (
     available_at TIMESTAMPTZ,
     locked_by VARCHAR(128),
     locked_at TIMESTAMPTZ,
+    lease_token UUID,
     result_checksum BIGINT,
     last_error TEXT,
     created_at TIMESTAMPTZ,
@@ -125,8 +155,8 @@ BEGIN
     RETURN QUERY
     SELECT existing.job_id, existing.idempotency_key, existing.task, existing.work_units,
            existing.max_attempts, existing.attempt_count, existing.status, existing.available_at,
-           existing.locked_by, existing.locked_at, existing.result_checksum, existing.last_error,
-           existing.created_at, existing.updated_at;
+           existing.locked_by, existing.locked_at, existing.lease_token, existing.result_checksum,
+           existing.last_error, existing.created_at, existing.updated_at;
 END
 $$;
 
@@ -142,6 +172,7 @@ RETURNS TABLE (
     available_at TIMESTAMPTZ,
     locked_by VARCHAR(128),
     locked_at TIMESTAMPTZ,
+    lease_token UUID,
     result_checksum BIGINT,
     last_error TEXT,
     created_at TIMESTAMPTZ,
@@ -151,6 +182,7 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
     candidate UUID;
+    new_lease UUID;
 BEGIN
     IF p_worker_id IS NULL OR length(trim(p_worker_id)) = 0 THEN
         RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'worker id must not be empty';
@@ -163,6 +195,7 @@ BEGIN
     FROM jobs AS j
     WHERE j.status = 'PENDING'
       AND j.available_at <= clock_timestamp()
+      AND j.attempt_count < j.max_attempts
     ORDER BY j.available_at, j.created_at, j.job_id
     FOR UPDATE SKIP LOCKED
     LIMIT 1;
@@ -171,10 +204,13 @@ BEGIN
         RETURN;
     END IF;
 
+    new_lease := gen_random_uuid();
+
     UPDATE jobs AS j
     SET status = 'RUNNING',
         locked_by = p_worker_id,
         locked_at = clock_timestamp(),
+        lease_token = new_lease,
         attempt_count = j.attempt_count + 1,
         last_error = NULL
     WHERE j.job_id = candidate;
@@ -182,15 +218,18 @@ BEGIN
     RETURN QUERY
     SELECT j.job_id, j.idempotency_key, j.task, j.work_units, j.max_attempts,
            j.attempt_count, j.status, j.available_at, j.locked_by, j.locked_at,
-           j.result_checksum, j.last_error, j.created_at, j.updated_at
+           j.lease_token, j.result_checksum, j.last_error, j.created_at, j.updated_at
     FROM jobs AS j
     WHERE j.job_id = candidate;
 END
 $$;
 
+DROP FUNCTION IF EXISTS complete_job(UUID, TEXT, BIGINT);
+
 CREATE OR REPLACE FUNCTION complete_job(
     p_job_id UUID,
     p_worker_id TEXT,
+    p_lease_token UUID,
     p_result_checksum BIGINT
 )
 RETURNS BOOLEAN
@@ -198,32 +237,58 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
     changed INTEGER;
+    current_status job_status;
+    current_checksum BIGINT;
 BEGIN
-    IF p_job_id IS NULL OR p_worker_id IS NULL OR length(trim(p_worker_id)) = 0 THEN
-        RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'job id and worker id are required';
+    IF p_job_id IS NULL
+       OR p_worker_id IS NULL
+       OR length(trim(p_worker_id)) = 0
+       OR p_lease_token IS NULL
+       OR p_result_checksum IS NULL THEN
+        RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'job id, worker id, lease token, and checksum are required';
     END IF;
 
     UPDATE jobs
     SET status = 'COMPLETED',
         locked_by = NULL,
         locked_at = NULL,
+        lease_token = NULL,
         result_checksum = p_result_checksum,
         last_error = NULL
     WHERE job_id = p_job_id
       AND status = 'RUNNING'
-      AND locked_by = p_worker_id;
+      AND locked_by = p_worker_id
+      AND lease_token = p_lease_token;
 
     GET DIAGNOSTICS changed = ROW_COUNT;
-    IF changed <> 1 THEN
-        RAISE EXCEPTION USING ERRCODE = '55000', MESSAGE = 'job is not owned by worker or is not RUNNING';
+    IF changed = 1 THEN
+        RETURN TRUE;
     END IF;
-    RETURN TRUE;
+
+    SELECT status, result_checksum
+    INTO current_status, current_checksum
+    FROM jobs
+    WHERE job_id = p_job_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION USING ERRCODE = '55000', MESSAGE = 'job does not exist';
+    END IF;
+
+    IF current_status = 'COMPLETED' AND current_checksum = p_result_checksum THEN
+        RETURN TRUE;
+    END IF;
+
+    RAISE EXCEPTION USING ERRCODE = '55000', MESSAGE = 'job is not owned by worker or is not safely completable';
 END
 $$;
+
+DROP FUNCTION IF EXISTS fail_job(UUID, TEXT, TEXT);
 
 CREATE OR REPLACE FUNCTION fail_job(
     p_job_id UUID,
     p_worker_id TEXT,
+    p_lease_token UUID,
     p_error TEXT
 )
 RETURNS job_status
@@ -234,15 +299,23 @@ DECLARE
     next_status job_status;
     delay_seconds INTEGER;
 BEGIN
+    IF p_job_id IS NULL
+       OR p_worker_id IS NULL
+       OR length(trim(p_worker_id)) = 0
+       OR p_lease_token IS NULL THEN
+        RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'job id, worker id, and lease token are required';
+    END IF;
+
     SELECT * INTO current_row
     FROM jobs
     WHERE job_id = p_job_id
       AND status = 'RUNNING'
       AND locked_by = p_worker_id
+      AND lease_token = p_lease_token
     FOR UPDATE;
 
     IF NOT FOUND THEN
-        RAISE EXCEPTION USING ERRCODE = '55000', MESSAGE = 'job is not owned by worker or is not RUNNING';
+        RAISE EXCEPTION USING ERRCODE = '55000', MESSAGE = 'job is not owned by worker or lease is stale';
     END IF;
 
     IF current_row.attempt_count < current_row.max_attempts THEN
@@ -255,9 +328,14 @@ BEGIN
 
     UPDATE jobs
     SET status = next_status,
-        available_at = clock_timestamp() + make_interval(secs => delay_seconds),
+        available_at = CASE
+            WHEN next_status = 'PENDING'
+                THEN clock_timestamp() + make_interval(secs => delay_seconds)
+            ELSE clock_timestamp()
+        END,
         locked_by = NULL,
         locked_at = NULL,
+        lease_token = NULL,
         last_error = LEFT(COALESCE(p_error, 'unspecified worker error'), 2000)
     WHERE job_id = p_job_id;
 
@@ -277,11 +355,18 @@ BEGIN
     END IF;
 
     UPDATE jobs
-    SET status = 'PENDING',
-        available_at = clock_timestamp(),
+    SET status = CASE
+            WHEN attempt_count < max_attempts THEN 'PENDING'::job_status
+            ELSE 'FAILED'::job_status
+        END,
+        available_at = CASE
+            WHEN attempt_count < max_attempts THEN clock_timestamp()
+            ELSE available_at
+        END,
         locked_by = NULL,
         locked_at = NULL,
-        last_error = LEFT(COALESCE(last_error, 'stale worker lock recovered'), 2000)
+        lease_token = NULL,
+        last_error = LEFT(COALESCE(last_error, 'stale worker lease recovered'), 2000)
     WHERE status = 'RUNNING'
       AND locked_at < clock_timestamp() - make_interval(secs => p_stale_after_seconds);
 
