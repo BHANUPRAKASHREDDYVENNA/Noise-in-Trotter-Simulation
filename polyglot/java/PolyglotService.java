@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -83,10 +84,12 @@ public final class PolyglotService {
         HttpServer server = HttpServer.create(new InetSocketAddress(host, port), 64);
         server.createContext("/health", this::handleHealth);
         server.createContext("/v1/jobs", this::handleJobs);
-        server.setExecutor(Executors.newFixedThreadPool(16));
+        java.util.concurrent.ExecutorService executor = Executors.newFixedThreadPool(16);
+        server.setExecutor(executor);
         java.util.concurrent.CountDownLatch shutdown = new java.util.concurrent.CountDownLatch(1);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             server.stop(0);
+            executor.shutdownNow();
             pool.close();
             shutdown.countDown();
         }, "polyglot-shutdown"));
@@ -105,7 +108,7 @@ public final class PolyglotService {
 
     private void handleJobs(HttpExchange exchange) throws IOException {
         try {
-            String method = exchange.getRequestMethod().toUpperCase();
+            String method = exchange.getRequestMethod().toUpperCase(Locale.ROOT);
             String path = exchange.getRequestURI().getPath();
             if ("POST".equals(method) && "/v1/jobs".equals(path)) {
                 handleCreateJob(exchange);
@@ -136,6 +139,7 @@ public final class PolyglotService {
     }
 
     private void handleCreateJob(HttpExchange exchange) throws Exception {
+        validateFormContentType(exchange);
         Map<String, String> form = parseForm(readBody(exchange));
         String idempotencyKey = required(form, "idempotency_key");
         String task = required(form, "task");
@@ -150,7 +154,10 @@ public final class PolyglotService {
         CacheEntry cached = idempotencyCache.get(idempotencyKey);
         long now = System.nanoTime();
         if (cached != null) {
-            if (cached.expiresAtNanos() > now) {
+            if (cached.expiresAtNanos() > now
+                && cached.task().equals(task)
+                && cached.workUnits() == workUnits
+                && cached.maxAttempts() == maxAttempts) {
                 JobView existing = repository.findJob(cached.jobId());
                 if (existing != null) {
                     sendJson(exchange, 200, existing.toJson());
@@ -161,7 +168,10 @@ public final class PolyglotService {
         }
 
         JobView job = repository.createJob(idempotencyKey, task, workUnits, maxAttempts);
-        idempotencyCache.put(idempotencyKey, new CacheEntry(job.jobId(), now + IDEMPOTENCY_CACHE_TTL_NANOS));
+        idempotencyCache.put(
+            idempotencyKey,
+            new CacheEntry(job.jobId(), task, workUnits, maxAttempts, now + IDEMPOTENCY_CACHE_TTL_NANOS)
+        );
         pruneIdempotencyCache();
         sendJson(exchange, 201, job.toJson());
     }
@@ -178,6 +188,14 @@ public final class PolyglotService {
             throw new NotFoundException("job not found");
         }
         sendJson(exchange, 200, job.toJson());
+    }
+
+    private static void validateFormContentType(HttpExchange exchange) throws ValidationException {
+        String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
+        if (contentType == null
+            || !contentType.toLowerCase(Locale.ROOT).startsWith("application/x-www-form-urlencoded")) {
+            throw new ValidationException("Content-Type must be application/x-www-form-urlencoded");
+        }
     }
 
     private static String readBody(HttpExchange exchange) throws IOException, ValidationException {
@@ -339,7 +357,7 @@ public final class PolyglotService {
         System.out.println("Java domain service self-test passed.");
     }
 
-    private record CacheEntry(UUID jobId, long expiresAtNanos) {}
+    private record CacheEntry(UUID jobId, String task, int workUnits, int maxAttempts, long expiresAtNanos) {}
 
     private record JobView(
         UUID jobId,
@@ -461,8 +479,22 @@ public final class PolyglotService {
             this.user = user;
             this.password = password;
             this.connections = new ArrayBlockingQueue<>(size);
-            for (int i = 0; i < size; i++) {
-                connections.add(openConnection());
+
+            List<Connection> opened = new ArrayList<>(size);
+            try {
+                for (int i = 0; i < size; i++) {
+                    opened.add(openConnection());
+                }
+                connections.addAll(opened);
+            } catch (SQLException error) {
+                for (Connection connection : opened) {
+                    try {
+                        connection.close();
+                    } catch (SQLException ignored) {
+                        // Best effort while construction is failing.
+                    }
+                }
+                throw error;
             }
         }
 
