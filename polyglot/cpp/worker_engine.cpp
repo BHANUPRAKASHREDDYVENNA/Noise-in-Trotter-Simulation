@@ -151,7 +151,11 @@ void complete_job(PGconn *connection, const Job &job, const std::string &worker_
     }
 }
 
-void fail_job(PGconn *connection, const Job &job, const std::string &worker_id, const std::string &error) {
+std::string fail_job(
+    PGconn *connection,
+    const Job &job,
+    const std::string &worker_id,
+    const std::string &error) {
     const char *values[] = {
         job.job_id.c_str(),
         worker_id.c_str(),
@@ -162,6 +166,10 @@ void fail_job(PGconn *connection, const Job &job, const std::string &worker_id, 
                                  "SELECT fail_job($1::uuid, $2, $3::uuid, $4)",
                                  4, nullptr, values, nullptr, nullptr, 0));
     ensure_ok(result.get(), PGRES_TUPLES_OK, connection, "fail_job");
+    if (PQntuples(result.get()) != 1) {
+        throw std::runtime_error("fail_job returned no status");
+    }
+    return PQgetvalue(result.get(), 0, 0);
 }
 
 void requeue_stale_jobs(PGconn *connection) {
@@ -296,12 +304,18 @@ private:
                     }
                 } catch (const std::exception &error) {
                     try {
-                        fail_job(connection.get(), *job, options_.worker_id, error.what());
+                        const std::string final_status =
+                            fail_job(connection.get(), *job, options_.worker_id, error.what());
+                        if (final_status == "COMPLETED") {
+                            completed_.fetch_add(1U);
+                        } else {
+                            failed_jobs_.fetch_add(1U);
+                        }
                     } catch (const std::exception &failure_error) {
                         std::cerr << "Worker " << worker_index << " could not record failure for "
                                   << job->job_id << ": " << failure_error.what() << '\n';
+                        failed_jobs_.fetch_add(1U);
                     }
-                    failed_jobs_.fetch_add(1U);
                 }
 
                 {
