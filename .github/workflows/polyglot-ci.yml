@@ -151,7 +151,7 @@ jobs:
 
           build/polyglot/polyglot_worker \
             --dsn "host=127.0.0.1 port=5432 dbname=polyglot user=polyglot password=polyglot connect_timeout=3" \
-            --worker-id ci-worker --threads 4 --queue-capacity 32 --jobs 8 --poll-ms 100 > /tmp/polyglot-worker.log 2>&1 &
+            --worker-id ci-worker --threads 4 --queue-capacity 32 --jobs 9 --poll-ms 100 > /tmp/polyglot-worker.log 2>&1 &
           worker_pid=$!
 
           python3 polyglot/python/orchestrator.py --base-url http://127.0.0.1:8080 --jobs 8
