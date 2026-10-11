@@ -23,6 +23,18 @@ class ClientConfig:
     overall_timeout_seconds: float = 60.0
     retries: int = 5
 
+    def __post_init__(self) -> None:
+        if not self.base_url.startswith(("http://", "https://")):
+            raise ValueError("base_url must start with http:// or https://")
+        if not 0.1 <= self.request_timeout_seconds <= 120.0:
+            raise ValueError("request_timeout_seconds must be between 0.1 and 120")
+        if not 0.01 <= self.poll_interval_seconds <= 60.0:
+            raise ValueError("poll_interval_seconds must be between 0.01 and 60")
+        if not 1.0 <= self.overall_timeout_seconds <= 3600.0:
+            raise ValueError("overall_timeout_seconds must be between 1 and 3600")
+        if not 1 <= self.retries <= 10:
+            raise ValueError("retries must be between 1 and 10")
+
 
 @dataclass(frozen=True)
 class JobResult:
@@ -35,6 +47,10 @@ class JobResult:
 
 class ApiError(RuntimeError):
     """Raised when the Java service returns an unexpected API response."""
+
+
+class RetryableApiError(ApiError):
+    """Raised for transient HTTP failures that are safe to retry."""
 
 
 class PolyglotApiClient:
@@ -77,22 +93,22 @@ class PolyglotApiClient:
         )
         return self._job_from_json(payload)
 
-    async def get_job(self, job_id: str) -> JobResult:
+    async def get_job(self, job_id: str, deadline: float | None = None) -> JobResult:
         try:
             uuid.UUID(job_id)
         except ValueError as error:
             raise ValueError("job_id must be a UUID") from error
-        payload = await self._request_json("GET", f"/v1/jobs/{job_id}", None)
+        payload = await self._request_json("GET", f"/v1/jobs/{job_id}", None, deadline=deadline)
         return self._job_from_json(payload)
 
     async def wait_for_completion(self, job_id: str) -> JobResult:
         deadline = asyncio.get_running_loop().time() + self._config.overall_timeout_seconds
         while True:
-            result = await self.get_job(job_id)
-            if result.status in {"COMPLETED", "FAILED"}:
-                return result
             if asyncio.get_running_loop().time() >= deadline:
                 raise TimeoutError(f"job {job_id} did not finish before the deadline")
+            result = await self.get_job(job_id, deadline=deadline)
+            if result.status in {"COMPLETED", "FAILED"}:
+                return result
             await asyncio.sleep(
                 self._config.poll_interval_seconds + random.uniform(0.0, 0.05)
             )
@@ -103,19 +119,45 @@ class PolyglotApiClient:
         path: str,
         body: bytes | None,
         content_type: str = "application/json",
+        deadline: float | None = None,
     ) -> Mapping[str, Any]:
         url = self._base_url + path
         last_error: Exception | None = None
         for attempt in range(self._config.retries):
+            timeout_seconds = self._config.request_timeout_seconds
+            if deadline is not None:
+                remaining = deadline - asyncio.get_running_loop().time()
+                if remaining <= 0:
+                    raise TimeoutError("request deadline expired")
+                timeout_seconds = min(timeout_seconds, remaining)
+
             try:
                 return await asyncio.to_thread(
-                    self._request_json_sync, method, url, body, content_type
+                    self._request_json_sync,
+                    method,
+                    url,
+                    body,
+                    content_type,
+                    timeout_seconds,
                 )
-            except (ApiError, urllib.error.URLError, TimeoutError) as error:
+            except RetryableApiError as error:
                 last_error = error
-                if attempt + 1 >= self._config.retries:
-                    break
-                await asyncio.sleep(min(1.0, 0.1 * (2**attempt)))
+            except (urllib.error.URLError, TimeoutError, OSError) as error:
+                last_error = error
+            except ApiError:
+                raise
+
+            if attempt + 1 >= self._config.retries:
+                break
+
+            delay = min(1.0, 0.1 * (2**attempt))
+            if deadline is not None:
+                remaining = deadline - asyncio.get_running_loop().time()
+                if remaining <= 0:
+                    raise TimeoutError("request deadline expired")
+                delay = min(delay, max(0.0, remaining))
+            await asyncio.sleep(delay)
+
         raise ApiError(f"request failed after retries: {last_error}") from last_error
 
     def _request_json_sync(
@@ -124,16 +166,18 @@ class PolyglotApiClient:
         url: str,
         body: bytes | None,
         content_type: str,
+        timeout_seconds: float,
     ) -> Mapping[str, Any]:
         request = urllib.request.Request(url=url, data=body, method=method)
         request.add_header("Accept", "application/json")
+        request.add_header("Connection", "close")
         if body is not None:
             request.add_header("Content-Type", content_type)
         try:
-            with urllib.request.urlopen(
-                request, timeout=self._config.request_timeout_seconds
-            ) as response:
-                content = response.read(1_048_576)
+            with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+                content = response.read(1_048_577)
+                if len(content) > 1_048_576:
+                    raise ApiError("service response exceeds 1 MiB")
                 parsed: Any = json.loads(content.decode("utf-8"))
                 if not isinstance(parsed, dict):
                     raise ApiError("service returned a non-object JSON response")
@@ -144,6 +188,8 @@ class PolyglotApiClient:
                 details = json.loads(raw)
             except json.JSONDecodeError:
                 details = {"error": raw or error.reason}
+            if error.code in {408, 425, 429, 500, 502, 503, 504}:
+                raise RetryableApiError(f"HTTP {error.code}: {details}") from error
             raise ApiError(f"HTTP {error.code}: {details}") from error
 
     @staticmethod
@@ -208,8 +254,12 @@ def parse_args() -> argparse.Namespace:
 
 async def main() -> None:
     args = parse_args()
-    if args.poll_ms <= 0:
-        raise ValueError("--poll-ms must be positive")
+    if args.poll_ms <= 0 or args.poll_ms > 60_000:
+        raise ValueError("--poll-ms must be between 1 and 60000")
+    if args.request_timeout <= 0 or args.request_timeout > 120:
+        raise ValueError("--request-timeout must be between 0.1 and 120 seconds")
+    if args.overall_timeout <= 0 or args.overall_timeout > 3600:
+        raise ValueError("--overall-timeout must be between 1 and 3600 seconds")
     config = ClientConfig(
         base_url=args.base_url,
         request_timeout_seconds=args.request_timeout,
