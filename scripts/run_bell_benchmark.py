@@ -21,6 +21,17 @@ def load(path: Path) -> dict:
     return definition
 
 
+def _noise(definition: dict) -> tuple[float, float, float]:
+    noise = definition["noise"]
+    p1 = noise.get("p1", noise.get("single_qubit_error"))
+    p2 = noise.get("p2", noise.get("two_qubit_error"))
+    readout = noise["readout_error"]
+    values = (p1, p2, readout)
+    if any(value is None for value in values):
+        raise ValueError("Processor noise must define single-qubit, two-qubit and readout error rates.")
+    return float(p1), float(p2), float(readout)
+
+
 def main() -> None:
     RESULTS.mkdir(parents=True, exist_ok=True)
     definitions = {
@@ -28,18 +39,21 @@ def main() -> None:
         "B": load(ROOT / "processors" / "processor_B.json"),
     }
 
-    models = [
-        ProcessorModel(
-            definitions[label]["name"],
-            definitions[label]["num_qubits"],
-            tuple(map(tuple, definitions[label]["coupling_map"])),
-            definitions[label]["noise"]["p1"],
-            definitions[label]["noise"]["p2"],
-            definitions[label]["noise"]["readout_error"],
-            ports=tuple(definitions[label]["ports"]),
+    models = []
+    for label in ("A", "B"):
+        definition = definitions[label]
+        p1, p2, readout = _noise(definition)
+        models.append(
+            ProcessorModel(
+                definition["name"],
+                definition["num_qubits"],
+                tuple(map(tuple, definition["coupling_map"])),
+                p1,
+                p2,
+                readout,
+                ports=tuple(definition["ports"]),
+            )
         )
-        for label in ("A", "B")
-    ]
 
     rows = [
         benchmark_bell_processor(model, shots=2048, seed=7)
