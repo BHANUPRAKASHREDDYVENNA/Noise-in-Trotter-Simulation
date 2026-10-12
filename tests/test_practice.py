@@ -5,6 +5,7 @@ from pathlib import Path
 import sys
 
 import numpy as np
+import pandas as pd
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -59,22 +60,9 @@ def test_exact_state_is_normalized():
 
 
 def test_practice_benchmark_is_deterministic():
-    cfg = json.loads((ROOT / "data" / "practice_config.json").read_text())
-    s = cfg["system"]
-    logical = logical_trotter_circuit(s["trotter_steps"], s["total_time"], s["J"], s["h"])
-    exact = ideal_exact_state(s["n_qubits"], s["total_time"], s["J"], s["h"])
-    p = cfg["processors"]["A"]
-    processor = PracticeProcessor(
-        p["name"],
-        s["n_qubits"],
-        tuple(tuple(edge) for edge in p["coupling_map"]),
-        p["p1"],
-        p["p2"],
-        p["readout_error"],
-    )
-    r1 = benchmark_processor(processor, logical, exact, s["n_qubits"], 50, 123)
-    r2 = benchmark_processor(processor, logical, exact, s["n_qubits"], 50, 123)
-    assert r1 == r2
+    first = run_source_ab()
+    second = run_source_ab()
+    pd.testing.assert_frame_equal(first, second)
 
 
 def test_routing_preserves_ideal_fidelity_reference():
