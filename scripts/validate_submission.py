@@ -91,7 +91,8 @@ def check_notebook() -> None:
         "SWAP",
         "physical qubits",
     )
-    missing = [term for term in required if term not in text]
+    normalized = text.casefold()
+    missing = [term for term in required if term.casefold() not in normalized]
     if missing:
         raise SystemExit("notebook is missing required source-document concepts: " + ", ".join(missing))
     if "official_challenge_kit" in text.lower():
