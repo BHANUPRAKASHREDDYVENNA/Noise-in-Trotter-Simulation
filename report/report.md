@@ -26,7 +26,7 @@ The controlled benchmark enforces identical A/B synthetic error rates so topolog
 
 ## Architecture interpretation
 
-The selected workload interacts with logical qubits 0 and 2. With the documented layout, Processor A has a direct 0–2 coupling, while Processor B routes the same interaction through its coupling graph. Each routed interaction uses a forward and reverse SWAP sequence, so the four-step workload produces 0 routing SWAPs on A and 8 on B.
+The selected workload interacts with logical qubits 0 and 2. With the documented layout, Processor A has a direct 0–2 coupling, while Processor B routes the same interaction through its coupling graph. The implementation deliberately uses different compilation policies: A uses deterministic FIFO shortest-path routing, while B uses a degree-aware contemporary path selector for tied shortest routes. Processor B's selected 0–2 interaction has a unique shortest path, so the contemporary policy chooses the same physical path and the four-step workload still produces 0 routing SWAPs on A and 8 on B.
 
 This is a finite-model comparison. It does not establish a universal hardware advantage.
 
