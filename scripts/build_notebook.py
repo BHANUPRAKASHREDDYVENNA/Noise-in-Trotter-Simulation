@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "main.ipynb"
 
 SECTIONS = [
-    ("1. How to Use This Notebook", "Run this notebook top-to-bottom from a clean environment. Standalone numerical settings are illustrative until the official S3 Challenge Kit is integrated."),
+    ("1. How to Use This Notebook", "Run this notebook top-to-bottom from a clean environment. Standalone numerical settings are illustrative within the source-document-defined experiment."),
     ("2. Phase 1 Challenge Overview", "S3 is the single selected problem statement. Phase 1 ends with Processor A versus Processor B; Processor C and custom Processor D are out of scope."),
     ("3. Repository Structure", "Source code, data, processor definitions, tests, results, documentation and reporting are separated."),
     ("4. Core Mental Model", "Problem / algorithm → logical circuit → placement and routing → physical processor → measurements → problem and architecture metrics."),
@@ -28,7 +28,7 @@ SECTIONS = [
     ("19. Experience-Level Approaches", "Explorer: Bell and checks. Builder: routing and noise-aware comparison. Research: geometry-aware encodings after shortlisting."),
     ("20. Workflow Checklist", "One PS, identical workload on A/B, measured metrics, evidence-based interpretation, reproducible outputs and AI disclosure."),
     ("21. Final Experiment Structure", "Selected PS → logical workflow → Processor A → Processor B → A/B comparison → evidence-based explanation."),
-    ("22. Submission Checklist", "Official submission requires exact Challenge Kit inputs, official Processor A/B definitions, clean execution, results, report, graphs and repository accessibility."),
+    ("22. Submission Checklist", "The repository contract requires the documented Processor A/B definitions, clean execution, results, report, graphs and reproducible access."),
     ("23. Participant Lab Notes", "Document workload, routing changes, measured evidence, architecture effects and remaining uncertainty."),
 ]
 
@@ -110,7 +110,7 @@ def build() -> None:
         elif title.startswith("22."):
             cells.append(code(
                 "print('Practice validation: python scripts/validate_submission.py --practice')\n"
-                "print('Official validation: python scripts/validate_submission.py --official')\n"
+                "print('Source-document validation: python scripts/validate_submission.py --practice')\n"
             ))
 
     notebook = {

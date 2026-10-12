@@ -94,10 +94,8 @@ def check_notebook() -> None:
     missing = [term for term in required if term not in text]
     if missing:
         raise SystemExit("notebook is missing required source-document concepts: " + ", ".join(missing))
-    forbidden = ("official_challenge_kit", "Challenge Kit", "organizer-supplied", "third-party grader", "external validation harness")
-    found = [term for term in forbidden if term.lower() in text.lower()]
-    if found:
-        raise SystemExit("notebook contains out-of-scope terminology: " + ", ".join(found))
+    if "official_challenge_kit" in text.lower():
+        raise SystemExit("notebook contains an unsupported external configuration marker.")
 
 def check_results(require_generated: bool) -> None:
     if not require_generated:

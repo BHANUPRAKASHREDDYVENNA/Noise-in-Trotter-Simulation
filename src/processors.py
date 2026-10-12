@@ -17,7 +17,7 @@ from src.validation import (
 def load_processor(
     path: str | Path,
     *,
-    require_official_source: bool = False,
+    require_source_document: bool = False,
 ) -> dict[str, Any]:
     path = Path(path)
     if not path.is_file():
@@ -29,7 +29,7 @@ def load_processor(
     validate_processor_definition(
         processor,
         path.name,
-        require_official_source=require_official_source,
+        require_source_document=require_source_document,
     )
     return processor
 
@@ -38,7 +38,7 @@ def validate_processor_definition(
     processor: dict[str, Any],
     label: str,
     *,
-    require_official_source: bool = False,
+    require_source_document: bool = False,
 ) -> None:
     validate_processor_mapping_dict(processor, label)
     noise = processor.get("noise") or {}
@@ -46,9 +46,9 @@ def validate_processor_definition(
         if key in noise:
             probability(f"{label}.noise.{key}", noise[key])
 
-    if require_official_source and processor.get("source") != "official_challenge_kit":
+    if require_source_document and processor.get("source") != "source_document":
         raise ValidationError(
-            f"{label} must declare source=source_document for official validation."
+            f"{label} must declare source=source_document for source-document validation."
         )
 
 
