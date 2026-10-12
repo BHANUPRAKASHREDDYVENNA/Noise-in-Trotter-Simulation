@@ -38,6 +38,11 @@ def test_single_qubit_processor_can_have_no_coupling_edges():
     assert validate_processor_mapping((), 1) == ()
 
 
+def test_global_processor_mapping_rejects_disconnected_graph():
+    with pytest.raises(ValidationError):
+        validate_processor_mapping(((0, 1), (2, 3)), 4)
+
+
 def test_statevector_memory_guard():
     with pytest.raises(ValidationError):
         validate_statevector_size(30, max_bytes=1024)
