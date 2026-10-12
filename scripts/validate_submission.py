@@ -43,6 +43,7 @@ REQUIRED_FILES = (
     "tests/test_online_ab.py",
 )
 
+
 def _reject_duplicate_pairs(pairs):
     result = {}
     for key, value in pairs:
@@ -71,9 +72,7 @@ def load_json(path: str) -> dict:
 def check_files() -> None:
     missing = [path for path in REQUIRED_FILES if not (ROOT / path).is_file()]
     if missing:
-        raise SystemExit("missing required files:
-- " + "
-- ".join(missing))
+        raise SystemExit("missing required files:\n- " + "\n- ".join(missing))
 
 
 def check_processors() -> dict[str, dict]:
@@ -144,8 +143,7 @@ def check_config(definitions: dict[str, dict]) -> dict:
 
 def check_notebook() -> None:
     notebook = load_json("main.ipynb")
-    text = "
-".join("".join(cell.get("source", [])) for cell in notebook.get("cells", []))
+    text = "\n".join("".join(cell.get("source", [])) for cell in notebook.get("cells", []))
     required = (
         "S3",
         "Processor A",
@@ -214,7 +212,12 @@ def check_results(require_generated: bool, definitions: dict[str, dict], cfg: di
             ("p2", "two_qubit_error"),
             ("readout_error", "readout_error"),
         ):
-            if not math.isclose(float(row[field]), float(data["noise"][noise_key]), rel_tol=0, abs_tol=1e-15):
+            if not math.isclose(
+                float(row[field]),
+                float(data["noise"][noise_key]),
+                rel_tol=0,
+                abs_tol=1e-15,
+            ):
                 raise SystemExit(f"Result row {label} has a noise mismatch in {field}.")
 
         if float(row["swap_count"]) != expected_swaps[label]:
