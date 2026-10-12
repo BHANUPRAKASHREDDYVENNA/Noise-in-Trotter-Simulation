@@ -19,7 +19,7 @@ from src.practice_s3 import (
     ideal_exact_state,
     logical_trotter_circuit,
 )
-from src.processors import load_processor, shortest_path
+from src.processors import load_processor, shortest_path, undirected_adjacency
 from src.validation import (
     MAX_TRAJECTORIES,
     ValidationError,
@@ -31,6 +31,78 @@ from src.validation import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+REFERENCE_BASELINE = "deterministic reference routing"
+CONTEMPORARY_BASELINE = "contemporary compilation baseline"
+
+
+def _graph_distances(adjacency: list[list[int]], source: int) -> list[int]:
+    distances = [-1] * len(adjacency)
+    distances[source] = 0
+    queue = [source]
+    head = 0
+    while head < len(queue):
+        node = queue[head]
+        head += 1
+        for neighbor in adjacency[node]:
+            if distances[neighbor] == -1:
+                distances[neighbor] = distances[node] + 1
+                queue.append(neighbor)
+    return distances
+
+
+def contemporary_shortest_path(
+    coupling_map: tuple[tuple[int, int], ...] | list[tuple[int, int]],
+    num_qubits: int,
+    source: int,
+    target: int,
+) -> tuple[int, ...]:
+    """Deterministic degree-aware shortest-path policy for Processor B."""
+    validate_qubit("source", source, num_qubits)
+    validate_qubit("target", target, num_qubits)
+    if source == target:
+        return (source,)
+
+    adjacency = undirected_adjacency(coupling_map, num_qubits)
+    from_source = _graph_distances(adjacency, source)
+    to_target = _graph_distances(adjacency, target)
+    shortest_distance = from_source[target]
+    if shortest_distance < 0:
+        raise ValidationError(
+            f"No coupling-map path exists between qubits {source} and {target}."
+        )
+
+    candidates: list[tuple[int, ...]] = []
+    limit = 128
+
+    def visit(node: int, path: list[int]) -> None:
+        if len(candidates) >= limit:
+            return
+        if node == target:
+            candidates.append(tuple(path))
+            return
+        for neighbor in adjacency[node]:
+            if neighbor in path:
+                continue
+            if from_source[neighbor] != from_source[node] + 1:
+                continue
+            if from_source[neighbor] + to_target[neighbor] != shortest_distance:
+                continue
+            path.append(neighbor)
+            visit(neighbor, path)
+            path.pop()
+
+    visit(source, [source])
+    if not candidates:
+        raise ValidationError(
+            f"Unable to construct a shortest path between qubits {source} and {target}."
+        )
+
+    def score(path: tuple[int, ...]) -> tuple[int, tuple[int, ...]]:
+        connectivity = sum(len(adjacency[node]) for node in path[1:-1])
+        return (-connectivity, path)
+
+    return min(candidates, key=score)
 
 
 def validate_layout(
@@ -110,7 +182,15 @@ def compile_source_workload(
             compiled.append(mapped_gate)
             continue
 
-        path = shortest_path(
+        if processor.compilation_baseline == REFERENCE_BASELINE:
+            path_selector = shortest_path
+        elif processor.compilation_baseline == CONTEMPORARY_BASELINE:
+            path_selector = contemporary_shortest_path
+        else:
+            raise ValidationError(
+                f"Unsupported compilation baseline: {processor.compilation_baseline}"
+            )
+        path = path_selector(
             processor.coupling_map,
             processor.num_qubits,
             q0,
