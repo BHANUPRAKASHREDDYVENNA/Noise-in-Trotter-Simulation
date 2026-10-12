@@ -1,14 +1,7 @@
 {
-  "name": "processor_B_toy_5q_line",
-  "num_qubits": 5,
-  "coupling_map": [[0,1],[1,2],[2,3],[3,4]],
-  "basis_gates": ["rz", "sx", "x", "cx"],
-  "ports": [0,4],
-  "noise": {
-    "type": "illustrative_depolarizing_proxy",
-    "p1": 0.001,
-    "p2": 0.01,
-    "readout_error": 0.01
-  },
-  "note": "The 5-qubit line topology and basis gates mirror the explicit illustrative processor in the supplied PDF."
+  "name":"processor_B","stage":"online","architecture":"heavy-hex-inspired graph","num_qubits":7,
+  "coupling_map":[[0,1],[1,2],[2,3],[3,4],[4,5],[5,0],[2,6]],
+  "basis_gates":["rz","sx","x","cx"],"ports":[0,6],
+  "noise_model":"synthetic","compilation_baseline":"contemporary compilation baseline","source":"source_document",
+  "noise":{"single_qubit_error":0.001,"two_qubit_error":0.01,"readout_error":0.01}
 }

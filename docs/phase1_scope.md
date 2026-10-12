@@ -1,15 +1,7 @@
-# Phase 1 scope
+# Online A/B Scope
 
-This project intentionally implements the online qualification workflow only:
+The supplied source document is the sole contract for this repository.
 
-- exactly one Problem Statement: S3 — Noise in Trotter Simulation;
-- logical solution/workflow;
-- Processor A execution;
-- Processor B execution;
-- problem-specific metrics;
-- architecture/resource metrics;
-- A/B comparison;
-- measured-evidence interpretation;
-- reproducible tables, figures, notebook and report.
+The implementation covers S3 — Noise in Trotter Simulation; Processor A (5 qubits, fixed baseline graph, synthetic noise); Processor B (7 qubits, heavy-hex-inspired graph, contemporary compilation baseline); a common controlled logical workload; solution quality; circuit cost; routing/SWAP overhead; physical qubit use; noise; reproducibility; and evidence-based A/B interpretation.
 
-Processor C and custom Processor D are excluded because they are Phase 2 work.
+Processor C and Processor D are outside the online execution path.

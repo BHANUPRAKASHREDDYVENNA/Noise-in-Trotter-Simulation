@@ -23,7 +23,7 @@ def transpile_for_processor(
         from qiskit.transpiler import CouplingMap
     except ImportError as exc:
         raise RuntimeError(
-            "Qiskit is not installed. Install requirements.txt or the organizer-supplied environment."
+            "Qiskit is not installed. Install requirements.txt or the repository environment."
         ) from exc
 
     coupling_map = CouplingMap(processor["coupling_map"])

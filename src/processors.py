@@ -48,7 +48,7 @@ def validate_processor_definition(
 
     if require_official_source and processor.get("source") != "official_challenge_kit":
         raise ValidationError(
-            f"{label} must declare source=official_challenge_kit for official validation."
+            f"{label} must declare source=source_document for official validation."
         )
 
 
