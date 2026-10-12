@@ -50,6 +50,7 @@ jobs:
       - run: python scripts/make_practice_figures.py
       - run: python scripts/run_bell_benchmark.py
       - run: python scripts/validate_submission.py --practice
+      - run: git diff --exit-code -- main.ipynb results/tables results/figures
       - run: python -m jupyter nbconvert --to notebook --execute main.ipynb --output executed_main.ipynb --ExecutePreprocessor.timeout=180 --ExecutePreprocessor.kernel_name=python3
       - uses: actions/upload-artifact@v7
         with:

@@ -16,6 +16,10 @@ def test_source_ab_uses_real_processor_definitions():
     assert set(frame["processor_source"]) == {"source_document"}
     assert set(frame["logical_qubits"]) == {3.0}
     assert set(frame["seed"]) == {2026.0}
+    assert list(frame["compilation_baseline"]) == [
+        "deterministic reference routing",
+        "contemporary compilation baseline",
+    ]
 
 
 def test_source_ab_uses_identical_controlled_noise():

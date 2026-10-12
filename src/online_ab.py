@@ -167,6 +167,7 @@ def _to_practice_processor(definition: dict) -> PracticeProcessor:
         p1=p1,
         p2=p2,
         readout_error=readout,
+        compilation_baseline=str(definition.get("compilation_baseline", "")),
     )
 
 
@@ -264,6 +265,7 @@ def benchmark_source_processor(
             "p1": p1,
             "p2": p2,
             "readout_error": readout,
+            "compilation_baseline": processor.compilation_baseline,
         }
     )
     return metrics

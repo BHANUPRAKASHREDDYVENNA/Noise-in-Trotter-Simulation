@@ -60,6 +60,7 @@ class PracticeProcessor:
     p1: float
     p2: float
     readout_error: float
+    compilation_baseline: str = "deterministic reference routing"
 
     def __post_init__(self) -> None:
         if not isinstance(self.name, str) or not self.name.strip():
@@ -69,6 +70,8 @@ class PracticeProcessor:
         probability("p1", self.p1)
         probability("p2", self.p2)
         probability("readout_error", self.readout_error)
+        if not isinstance(self.compilation_baseline, str) or not self.compilation_baseline.strip():
+            raise ValidationError("compilation_baseline must be a non-empty string.")
 
 
 def _validate_state(state: np.ndarray, n: int) -> None:

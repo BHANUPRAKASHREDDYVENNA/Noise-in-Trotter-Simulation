@@ -191,6 +191,29 @@ def check_results(require_generated: bool, definitions: dict[str, dict], cfg: di
 
     expected_swaps = {"A": 0.0, "B": 8.0}
     expected_2q = {"A": 4.0, "B": 28.0}
+    # Re-run the benchmark and compare against the saved table. This closes the
+    # provenance loophole where a manually edited CSV could otherwise pass schema checks.
+    try:
+        from src.online_ab import run_source_ab
+        import pandas as pd
+        fresh = run_source_ab(cfg.get("config_path", ROOT / "data" / "practice_config.json"))
+        saved = pd.DataFrame(rows)
+        saved = saved.sort_values("processor").reset_index(drop=True)
+        fresh = fresh.sort_values("processor").reset_index(drop=True)
+        for column in fresh.columns:
+            if column not in saved.columns:
+                raise SystemExit(f"Generated result table is missing benchmark column: {column}")
+            if fresh[column].dtype.kind in "biufc" and saved[column].dtype.kind in "biufc":
+                for expected_value, saved_value in zip(fresh[column], saved[column]):
+                    if not math.isclose(float(expected_value), float(saved_value), rel_tol=0, abs_tol=1e-12):
+                        raise SystemExit(f"Saved benchmark result differs from a fresh source A/B run in {column}.")
+            elif not fresh[column].astype(str).equals(saved[column].astype(str)):
+                raise SystemExit(f"Saved benchmark result differs from a fresh source A/B run in {column}.")
+    except Exception as exc:
+        if isinstance(exc, SystemExit):
+            raise
+        raise SystemExit(f"Fresh source A/B benchmark verification failed: {exc}") from exc
+
     for label in ("A", "B"):
         row = by_label[label]
         data = definitions[label]
@@ -199,6 +222,8 @@ def check_results(require_generated: bool, definitions: dict[str, dict], cfg: di
             raise SystemExit(f"Result row {label} does not identify the source processor.")
         if row.get("processor_source") != "source_document":
             raise SystemExit(f"Result row {label} does not identify source_document provenance.")
+        if row.get("compilation_baseline") != data.get("compilation_baseline"):
+            raise SystemExit(f"Result row {label} has the wrong compilation baseline metadata.")
         if float(row["physical_qubits"]) != float(data["num_qubits"]):
             raise SystemExit(f"Result row {label} has the wrong physical-qubit count.")
         if float(row["logical_qubits"]) != float(cfg["system"]["n_qubits"]):

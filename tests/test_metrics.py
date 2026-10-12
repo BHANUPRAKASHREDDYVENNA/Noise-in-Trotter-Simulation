@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
 from src.metrics import add_runtime, circuit_metrics
@@ -34,3 +36,10 @@ def test_circuit_metrics_counts_two_qubit_operations():
 def test_runtime_metric_rejects_nan():
     with pytest.raises(ValueError):
         add_runtime({}, float("nan"))
+
+
+def test_circuit_metrics_counts_unknown_two_qubit_instruction_by_arity():
+    circuit = FakeCircuit({"custom_2q": 1})
+    circuit.data = [SimpleNamespace(qubits=(0, 1))]
+    metrics = circuit_metrics(circuit)
+    assert metrics["two_qubit_gate_count"] == 1

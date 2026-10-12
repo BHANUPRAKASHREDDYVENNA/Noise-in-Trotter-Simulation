@@ -28,10 +28,22 @@ def circuit_metrics(qc: Any) -> dict[str, Any]:
     if isinstance(num_qubits, bool) or not isinstance(num_qubits, int) or num_qubits <= 0:
         raise ValueError("Circuit qubit count must be positive.")
 
-    two_qubit_names = {"cx", "cz", "ecr", "swap", "rxx", "ryy", "rzz"}
-    two_qubit_count = sum(
-        count for gate, count in normalized_ops.items() if gate.lower() in two_qubit_names
-    )
+    # Prefer the circuit's actual instruction arity when available. This avoids
+    # undercounting valid two-qubit gates whose names are not in a fixed whitelist.
+    two_qubit_count = None
+    data = getattr(qc, "data", None)
+    if data is not None:
+        try:
+            two_qubit_count = sum(
+                1 for instruction in data if len(getattr(instruction, "qubits", ())) == 2
+            )
+        except TypeError:
+            two_qubit_count = None
+    if two_qubit_count is None:
+        two_qubit_names = {"cx", "cz", "ecr", "swap", "rxx", "ryy", "rzz"}
+        two_qubit_count = sum(
+            count for gate, count in normalized_ops.items() if gate.lower() in two_qubit_names
+        )
     total_ops = sum(normalized_ops.values())
 
     return {
