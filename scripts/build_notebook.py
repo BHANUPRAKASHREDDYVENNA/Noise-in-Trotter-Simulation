@@ -18,7 +18,7 @@ SECTIONS = [
     ("9. Transpilation", "The Qiskit adapter accepts an repository Processor A/B coupling maps and basis-gate definitions with a fixed transpiler seed."),
     ("10. Noise", "The practice path applies stochastic Pauli errors; these rates are illustrative and are not hardware characterization."),
     ("11. Required Measurements", "Record problem quality together with depth, two-qubit gates, routing/SWAP overhead, physical qubits and uncertainty."),
-    ("12. Processor Definitions", "Processor JSON files are schema-validated before use. Processor definitions must declare source=source_document."),
+    ("12. Processor Definitions", "Processor A is the 5-qubit fixed baseline graph and Processor B is the 7-qubit heavy-hex-inspired graph. Processor JSON files are schema-validated before use and declare source=source_document."),
     ("13. Problem Statement", "Selected PS: S3 — Noise in Trotter Simulation."),
     ("14. A/B Experiment", "The same logical workload is benchmarked on the two practice processor models using deterministic seeds."),
     ("15. A/B Comparison", "Compare solution quality with circuit cost and routing overhead, then explain measured differences."),
