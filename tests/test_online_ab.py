@@ -4,7 +4,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.online_ab import embed_logical_state, run_source_ab, validate_layout
+from src.online_ab import (
+    contemporary_shortest_path,
+    embed_logical_state,
+    run_source_ab,
+    validate_layout,
+)
 from src.validation import ValidationError
 
 
@@ -41,6 +46,11 @@ def test_source_ab_is_reproducible_with_one_common_seed():
     first = run_source_ab()
     second = run_source_ab()
     pd.testing.assert_frame_equal(first, second)
+
+
+def test_compilation_baselines_use_distinct_routing_policies():
+    coupling = ((0, 1), (1, 3), (0, 2), (2, 3), (2, 4))
+    assert contemporary_shortest_path(coupling, 5, 0, 3) == (0, 2, 3)
 
 
 def test_embedding_preserves_state_norm_and_rejects_bad_layout():
