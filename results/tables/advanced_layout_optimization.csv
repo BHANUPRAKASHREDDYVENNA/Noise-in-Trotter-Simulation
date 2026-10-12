@@ -1,0 +1,3 @@
+configuration,layout,swap_count,two_qubit_gates,depth,mean_fidelity,routing_overhead_eliminated
+"Processor B (Naive Layout [0,1,2])","(0, 1, 2)",6,28.0,32.0,0.7989644927877728,0%
+"Processor B (Geometry-Aware Layout (0, 1, 5))","(0, 1, 5)",0,4.0,8.0,0.9704086663568142,100%

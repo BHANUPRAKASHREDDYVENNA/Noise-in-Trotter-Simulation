@@ -1,0 +1,21 @@
+{
+  "name": "processor_D",
+  "stage": "offline_design",
+  "architecture": "hyperbolic-pentagonal hybrid graph",
+  "num_qubits": 9,
+  "coupling_map": [
+    [0, 1], [0, 3], [0, 5], [0, 8],
+    [1, 2], [2, 3], [3, 4], [4, 5], [5, 1],
+    [2, 6], [4, 7]
+  ],
+  "basis_gates": ["rz", "sx", "x", "cx"],
+  "ports": [6, 7],
+  "noise_model": "synthetic",
+  "compilation_baseline": "geometry-aware optimal routing",
+  "source": "team_venna_designed",
+  "noise": {
+    "single_qubit_error": 0.001,
+    "two_qubit_error": 0.01,
+    "readout_error": 0.01
+  }
+}

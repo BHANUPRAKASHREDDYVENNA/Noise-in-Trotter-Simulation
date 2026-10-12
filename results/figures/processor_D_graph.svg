@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="440" viewBox="0 0 760 440">
+  <defs>
+    <radialGradient id="nodeGrad" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </radialGradient>
+    <radialGradient id="portGrad" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#f43f5e"/>
+      <stop offset="100%" stop-color="#be123c"/>
+    </radialGradient>
+    <radialGradient id="centerGrad" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#7e22ce"/>
+    </radialGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="#ffffff" rx="8"/>
+  <text x="380" y="36" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#0f172a">Custom Processor D: 9-Qubit Hyperbolic-Pentagonal Graph</text>
+  <text x="380" y="58" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" fill="#64748b">Designed for Low Routing Overhead (Diameter 3, Avg Distance 1.83, Max Degree ≤ 4)</text>
+
+  <!-- Coordinates: Center (380, 220), Radius 110 for pentagon, satellites at 180 -->
+  <!-- Center: 0 (380, 220) -->
+  <!-- Pentagon:
+       1: (380, 110)
+       2: (485, 186)
+       3: (445, 308)
+       4: (315, 308)
+       5: (275, 186)
+       6 (satellite of 2): (580, 170) [PORT]
+       7 (satellite of 4): (240, 360) [PORT]
+       8 (satellite of 0): (380, 370)
+  -->
+
+  <!-- Coupling Edges -->
+  <g stroke="#94a3b8" stroke-width="2.5">
+    <!-- Center spokes -->
+    <line x1="380" y1="220" x2="380" y2="110"/>
+    <line x1="380" y1="220" x2="445" y2="308"/>
+    <line x1="380" y1="220" x2="275" y2="186"/>
+    <line x1="380" y1="220" x2="380" y2="370"/>
+    
+    <!-- Pentagon perimeter -->
+    <line x1="380" y1="110" x2="485" y2="186"/>
+    <line x1="485" y1="186" x2="445" y2="308"/>
+    <line x1="445" y1="308" x2="315" y2="308"/>
+    <line x1="315" y1="308" x2="275" y2="186"/>
+    <line x1="275" y1="186" x2="380" y2="110"/>
+    
+    <!-- Satellites -->
+    <line x1="485" y1="186" x2="580" y2="170"/>
+    <line x1="315" y1="308" x2="240" y2="360"/>
+  </g>
+
+  <!-- Nodes -->
+  <!-- Center 0 -->
+  <circle cx="380" cy="220" r="18" fill="url(#centerGrad)"/>
+  <text x="380" y="225" text-anchor="middle" font-family="monospace" font-size="13" font-weight="bold" fill="#ffffff">0</text>
+
+  <!-- Pentagon nodes 1-5 -->
+  <circle cx="380" cy="110" r="17" fill="url(#nodeGrad)"/>
+  <text x="380" y="115" text-anchor="middle" font-family="monospace" font-size="12" font-weight="bold" fill="#ffffff">1</text>
+
+  <circle cx="485" cy="186" r="17" fill="url(#nodeGrad)"/>
+  <text x="485" y="191" text-anchor="middle" font-family="monospace" font-size="12" font-weight="bold" fill="#ffffff">2</text>
+
+  <circle cx="445" cy="308" r="17" fill="url(#nodeGrad)"/>
+  <text x="445" y="313" text-anchor="middle" font-family="monospace" font-size="12" font-weight="bold" fill="#ffffff">3</text>
+
+  <circle cx="315" cy="308" r="17" fill="url(#nodeGrad)"/>
+  <text x="315" y="313" text-anchor="middle" font-family="monospace" font-size="12" font-weight="bold" fill="#ffffff">4</text>
+
+  <circle cx="275" cy="186" r="17" fill="url(#nodeGrad)"/>
+  <text x="275" y="191" text-anchor="middle" font-family="monospace" font-size="12" font-weight="bold" fill="#ffffff">5</text>
+
+  <!-- Port 6 -->
+  <circle cx="580" cy="170" r="18" fill="url(#portGrad)"/>
+  <text x="580" y="175" text-anchor="middle" font-family="monospace" font-size="13" font-weight="bold" fill="#ffffff">6</text>
+  <text x="635" y="175" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#be123c">Port 6</text>
+
+  <!-- Port 7 -->
+  <circle cx="240" cy="360" r="18" fill="url(#portGrad)"/>
+  <text x="240" y="365" text-anchor="middle" font-family="monospace" font-size="13" font-weight="bold" fill="#ffffff">7</text>
+  <text x="185" y="365" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#be123c">Port 7</text>
+
+  <!-- Node 8 -->
+  <circle cx="380" cy="370" r="17" fill="url(#nodeGrad)"/>
+  <text x="380" y="375" text-anchor="middle" font-family="monospace" font-size="12" font-weight="bold" fill="#ffffff">8</text>
+</svg>

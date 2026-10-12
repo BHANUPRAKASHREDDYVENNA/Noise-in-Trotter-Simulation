@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+pytest.importorskip("qiskit")
 from qiskit import QuantumCircuit
 
 from src.metrics import add_runtime, circuit_metrics

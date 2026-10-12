@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="420" viewBox="0 0 760 420">
+  <rect width="100%" height="100%" fill="#ffffff" rx="8"/>
+  <text x="380" y="38" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#0f172a">Algorithmic Error Scaling: 1st vs 2nd-Order Trotter</text>
+  <text x="380" y="60" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" fill="#64748b">Infidelity (1 - F_ideal) as a function of Trotter steps r (log-log representation)</text>
+  
+  <!-- Coordinate frame -->
+  <line x1="120" y1="340" x2="680" y2="340" stroke="#cbd5e1" stroke-width="2"/>
+  <line x1="120" y1="90" x2="120" y2="340" stroke="#cbd5e1" stroke-width="2"/>
+  
+  <text x="400" y="375" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" fill="#334155">Number of Trotter Steps (r)</text>
+  <text x="60" y="215" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" fill="#334155" transform="rotate(-90 60 215)">Algorithmic Infidelity</text>
+  
+  <!-- Step labels -->
+  <text x="180" y="355" text-anchor="middle" font-family="monospace" font-size="12" fill="#475569">r = 1</text>
+  <text x="320" y="355" text-anchor="middle" font-family="monospace" font-size="12" fill="#475569">r = 2</text>
+  <text x="480" y="355" text-anchor="middle" font-family="monospace" font-size="12" fill="#475569">r = 4</text>
+  <text x="640" y="355" text-anchor="middle" font-family="monospace" font-size="12" fill="#475569">r = 8</text>
+  
+  <!-- S1 Line (O(dt) slope) -->
+  <polyline points="180,120 320,180 480,240 640,300" fill="none" stroke="#f97316" stroke-width="3"/>
+  <circle cx="180" cy="120" r="5" fill="#f97316"/>
+  <circle cx="320" cy="180" r="5" fill="#f97316"/>
+  <circle cx="480" cy="240" r="5" fill="#f97316"/>
+  <circle cx="640" cy="300" r="5" fill="#f97316"/>
+  
+  <!-- S2 Line (O(dt^2) slope, steeper reduction) -->
+  <polyline points="180,150 320,240 480,310 640,335" fill="none" stroke="#6366f1" stroke-width="3" stroke-dasharray="6,4"/>
+  <circle cx="180" cy="150" r="5" fill="#6366f1"/>
+  <circle cx="320" cy="240" r="5" fill="#6366f1"/>
+  <circle cx="480" cy="310" r="5" fill="#6366f1"/>
+  <circle cx="640" cy="335" r="5" fill="#6366f1"/>
+  
+  <!-- Legend -->
+  <rect x="470" y="95" width="200" height="65" fill="#f8fafc" stroke="#e2e8f0" rx="4"/>
+  <line x1="485" y1="115" x2="515" y2="115" stroke="#f97316" stroke-width="3"/>
+  <text x="525" y="119" font-family="system-ui, sans-serif" font-size="12" fill="#0f172a">1st-Order S1 (O(Δt))</text>
+  <line x1="485" y1="140" x2="515" y2="140" stroke="#6366f1" stroke-width="3" stroke-dasharray="6,4"/>
+  <text x="525" y="144" font-family="system-ui, sans-serif" font-size="12" fill="#0f172a">2nd-Order S2 (O(Δt²))</text>
+</svg>

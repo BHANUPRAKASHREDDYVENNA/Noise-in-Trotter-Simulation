@@ -1,0 +1,4 @@
+name,num_qubits,ports,port_distance,swaps_needed,total_2q_gates,noise_parameter,bell_fidelity,XX,YY,ZZ,verification_metric,processor
+processor_A,5,"[0, 4]",2,1,4,0.0471,0.9647,0.9529,-0.9529,0.9529,2.8588,A
+processor_B,7,"[0, 6]",3,2,7,0.0809,0.9393,0.9191,-0.9191,0.9191,2.7573,B
+processor_D,9,"[6, 7]",4,3,10,0.1135,0.9148,0.8865,-0.8865,0.8865,2.6594,D
