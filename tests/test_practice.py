@@ -11,6 +11,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from src.online_ab import run_source_ab  # noqa: E402
 from src.practice_s3 import (  # noqa: E402
     PracticeProcessor,
     benchmark_processor,
