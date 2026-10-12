@@ -259,7 +259,7 @@ def check_results(require_generated: bool, definitions: dict[str, dict], cfg: di
             raise SystemExit(f"Result row {label} has inconsistent SWAP gate accounting.")
 
         for name, value in row.items():
-            if name in {"processor", "processor_name", "processor_source"}:
+            if name in {"processor", "processor_name", "processor_source", "compilation_baseline"}:
                 continue
             numeric = float(value)
             if not math.isfinite(numeric):
