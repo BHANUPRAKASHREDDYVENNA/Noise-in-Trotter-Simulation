@@ -1,1 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="720" height="420" viewBox="0 0 720 420"><rect width="100%" height="100%" fill="white"/><text x="360" y="35" text-anchor="middle" font-size="22">Architecture Trade-offs: Processor A vs B</text><line x1="90" y1="360" x2="650" y2="360" stroke="black"/><line x1="90" y1="70" x2="90" y2="360" stroke="black"/><text x="200" y="390" text-anchor="middle">A</text><text x="540" y="390" text-anchor="middle">B</text><text x="25" y="95" font-size="12">higher</text><rect x="145" y="100" width="110" height="260" fill="#777"/><rect x="485" y="260" width="110" height="100" fill="#aaa"/><text x="200" y="90" text-anchor="middle">fidelity 0.968</text><text x="540" y="250" text-anchor="middle">0.756</text><text x="360" y="415" text-anchor="middle">Illustrative practice demonstrator</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="460" viewBox="0 0 760 460">
+<rect width="100%" height="100%" fill="white"/>
+<text x="380" y="34" text-anchor="middle" font-size="22">Source-document A/B architecture trade-offs</text>
+<text x="150" y="82" text-anchor="middle" font-size="16">Depth</text>
+<text x="380" y="82" text-anchor="middle" font-size="16">2Q gates</text>
+<text x="610" y="82" text-anchor="middle" font-size="16">SWAPs</text>
+<line x1="55" y1="370" x2="245" y2="370" stroke="black"/>
+<line x1="285" y1="370" x2="475" y2="370" stroke="black"/>
+<line x1="515" y1="370" x2="705" y2="370" stroke="black"/>
+<rect x="85" y="290" width="55" height="80" fill="#777"/>
+<rect x="170" y="50" width="55" height="320" fill="#aaa"/>
+<rect x="315" y="330" width="55" height="40" fill="#777"/>
+<rect x="400" y="50" width="55" height="320" fill="#aaa"/>
+<rect x="545" y="350" width="55" height="20" fill="#777"/>
+<rect x="630" y="50" width="55" height="320" fill="#aaa"/>
+<text x="112" y="283" text-anchor="middle">8</text>
+<text x="197" y="43" text-anchor="middle">32</text>
+<text x="342" y="323" text-anchor="middle">4</text>
+<text x="427" y="43" text-anchor="middle">28</text>
+<text x="572" y="343" text-anchor="middle">0</text>
+<text x="657" y="43" text-anchor="middle">8</text>
+<text x="112" y="400" text-anchor="middle">A</text><text x="197" y="400" text-anchor="middle">B</text>
+<text x="342" y="400" text-anchor="middle">A</text><text x="427" y="400" text-anchor="middle">B</text>
+<text x="572" y="400" text-anchor="middle">A</text><text x="657" y="400" text-anchor="middle">B</text>
+<text x="380" y="438" text-anchor="middle">B pays for non-adjacent 0–2 interactions through routing</text>
+</svg>

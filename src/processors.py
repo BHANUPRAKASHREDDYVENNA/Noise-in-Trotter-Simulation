@@ -14,6 +14,15 @@ from src.validation import (
 )
 
 
+def _reject_duplicate_pairs(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValidationError(f"Duplicate JSON key detected: {key}")
+        result[key] = value
+    return result
+
+
 def load_processor(
     path: str | Path,
     *,
@@ -23,7 +32,10 @@ def load_processor(
     if not path.is_file():
         raise FileNotFoundError(f"Processor definition not found: {path}")
     try:
-        processor = json.loads(path.read_text(encoding="utf-8"))
+        processor = json.loads(
+            path.read_text(encoding="utf-8"),
+            object_pairs_hook=_reject_duplicate_pairs,
+        )
     except json.JSONDecodeError as exc:
         raise ValidationError(f"Invalid JSON in {path}: {exc}") from exc
     validate_processor_definition(
@@ -41,10 +53,47 @@ def validate_processor_definition(
     require_source_document: bool = False,
 ) -> None:
     validate_processor_mapping_dict(processor, label)
-    noise = processor.get("noise") or {}
-    for key in ("p1", "p2", "readout_error"):
-        if key in noise:
-            probability(f"{label}.noise.{key}", noise[key])
+    coupling_map = processor["coupling_map"]
+    num_qubits = int(processor["num_qubits"])
+
+    if num_qubits > 1:
+        adjacency = [[] for _ in range(num_qubits)]
+        for a, b in coupling_map:
+            adjacency[a].append(b)
+            adjacency[b].append(a)
+        seen = {0}
+        queue = deque([0])
+        while queue:
+            node = queue.popleft()
+            for neighbor in adjacency[node]:
+                if neighbor not in seen:
+                    seen.add(neighbor)
+                    queue.append(neighbor)
+        if len(seen) != num_qubits:
+            raise ValidationError(f"{label}.coupling_map must define a connected processor graph.")
+
+    noise = processor.get("noise")
+    if noise is not None:
+        if not isinstance(noise, dict):
+            raise ValidationError(f"{label}.noise must be an object.")
+
+        p1 = noise.get("p1", noise.get("single_qubit_error"))
+        p2 = noise.get("p2", noise.get("two_qubit_error"))
+        readout = noise.get("readout_error")
+        if p1 is None or p2 is None or readout is None:
+            raise ValidationError(
+                f"{label}.noise must define single-qubit, two-qubit and readout error rates."
+            )
+        probability(f"{label}.noise.single_qubit_error", p1)
+        probability(f"{label}.noise.two_qubit_error", p2)
+        probability(f"{label}.noise.readout_error", readout)
+
+        if require_source_document:
+            for key in ("single_qubit_error", "two_qubit_error", "readout_error"):
+                if key not in noise:
+                    raise ValidationError(
+                        f"{label}.noise.{key} is required for source-document validation."
+                    )
 
     if require_source_document and processor.get("source") != "source_document":
         raise ValidationError(
