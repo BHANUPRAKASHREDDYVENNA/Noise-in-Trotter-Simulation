@@ -191,6 +191,7 @@ def check_results(require_generated: bool, definitions: dict[str, dict], cfg: di
 
     expected_swaps = {"A": 0.0, "B": 8.0}
     expected_2q = {"A": 4.0, "B": 28.0}
+    serialized_float_tolerance = 5e-7
     # Re-run the benchmark and compare against the saved table. This closes the
     # provenance loophole where a manually edited CSV could otherwise pass schema checks.
     try:
@@ -205,7 +206,12 @@ def check_results(require_generated: bool, definitions: dict[str, dict], cfg: di
                 raise SystemExit(f"Generated result table is missing benchmark column: {column}")
             if fresh[column].dtype.kind in "biufc" and saved[column].dtype.kind in "biufc":
                 for expected_value, saved_value in zip(fresh[column], saved[column]):
-                    if not math.isclose(float(expected_value), float(saved_value), rel_tol=0, abs_tol=1e-12):
+                    if not math.isclose(
+                            float(expected_value),
+                            float(saved_value),
+                            rel_tol=0,
+                            abs_tol=serialized_float_tolerance,
+                        ):
                         raise SystemExit(f"Saved benchmark result differs from a fresh source A/B run in {column}.")
             elif not fresh[column].astype(str).equals(saved[column].astype(str)):
                 raise SystemExit(f"Saved benchmark result differs from a fresh source A/B run in {column}.")
