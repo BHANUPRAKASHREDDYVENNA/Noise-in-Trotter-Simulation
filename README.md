@@ -32,7 +32,7 @@ src/online_ab.py
 scripts/run_practice.py
 ```
 
-The small 3-qubit workload is embedded into the physical processor statevector using the deterministic layout in `data/practice_config.json`. Routing is derived from the selected processor coupling graph.
+The small 3-qubit workload is embedded into the physical processor statevector using the deterministic layout in `data/practice_config.json`. Routing is derived from the selected processor coupling graph. Processor A uses the source-labeled deterministic reference policy; Processor B uses the source-labeled contemporary baseline instantiated here as a degree-aware shortest-path selector for tied routes.
 
 ## Reproducibility controls
 
@@ -107,7 +107,8 @@ The end-to-end A/B tests specifically verify that:
 - the runtime processor names come from the JSON definitions;
 - both rows use the same seed and trajectory count;
 - the noise rates are identical;
-- routing produces the expected 0-SWAP versus 8-SWAP result for the documented 4-step workload;
+- Processor A uses the deterministic reference router while Processor B uses the distinct degree-aware contemporary routing baseline;
+- the documented 4-step workload still produces the expected 0-SWAP versus 8-SWAP result because Processor B has a unique shortest path for the selected 0–2 interaction;
 - the generated result table uses the source-document provenance marker.
 
 ## Validation hardening
