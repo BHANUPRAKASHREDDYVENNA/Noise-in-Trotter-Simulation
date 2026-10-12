@@ -1,6 +1,6 @@
 {
-  "status": "GUIDE_DERIVED_ILLUSTRATIVE_S3_DEMONSTRATOR",
-  "purpose": "Exercise the Phase-1 architecture/noise A/B workflow with a small reproducible Trotter model.",
+  "status": "SOURCE_DOCUMENT_CONTROLLED_ILLUSTRATIVE_S3_BENCHMARK",
+  "purpose": "Run the common S3 workload directly against the source-document Processor A and Processor B definitions.",
   "system": {
     "n_qubits": 3,
     "J": 1.0,
@@ -10,20 +10,9 @@
   },
   "shots_or_trajectories": 2000,
   "seed": 2026,
-  "processors": {
-    "A": {
-      "name": "practice_fully_connected_3q",
-      "coupling_map": [[0, 1], [0, 2], [1, 2]],
-      "p1": 0.0005,
-      "p2": 0.008,
-      "readout_error": 0.002
-    },
-    "B": {
-      "name": "practice_line_3q",
-      "coupling_map": [[0, 1], [1, 2]],
-      "p1": 0.0008,
-      "p2": 0.012,
-      "readout_error": 0.003
-    }
+  "layout": [0, 1, 2],
+  "processor_files": {
+    "A": "processors/processor_A.json",
+    "B": "processors/processor_B.json"
   }
 }

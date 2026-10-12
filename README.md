@@ -1,130 +1,80 @@
-# Qiskit Fall Fest 2026 — Online A/B S3 Architecture Benchmark
+# Qiskit Fall Fest 2026 — Phase 1 S3 Architecture Benchmark
 
-## Source document
+## Source contract
 
-The exact architecture reference used by this repository is preserved as text at `docs/source_document.md`. It is an extracted copy of the provided source document and is treated as the repository contract.
+The supplied Phase-1 source document is the sole contract for this repository and is preserved at:
 
-## Scope
+`docs/source_document.md`
 
-This repository implements the online architecture comparison described in the supplied **Geometry-aware quantum cloud challenge — Hackathon overview**.
+The selected problem is **S3 — Noise in Trotter Simulation**.
 
-The controlled experiment uses:
+## Controlled online A/B experiment
 
-- **Processor A:** 5 qubits, fixed baseline graph, synthetic noise model.
-- **Processor B:** 7 qubits, heavy-hex-inspired graph, contemporary compilation baseline.
-- One common logical workload: **S3 — Noise in Trotter Simulation**.
-- One common parameter set, trajectory count and seed.
-- Problem-quality, depth, two-qubit gates, SWAP overhead, physical-qubit count, noise and reproducibility metrics.
-- Machine-readable A/B results and generated architecture/quality figures.
+The executable A/B benchmark now loads the actual source-document processor definitions:
 
-The online path ends at the A/B comparison. Processor C, Processor D and the Bell-correlation protection study are kept outside the online benchmark path because the source document places them in the offline stage.
+- **Processor A:** 5 qubits, fixed baseline graph.
+- **Processor B:** 7 qubits, heavy-hex-inspired graph.
+- Both use the same declared synthetic noise rates.
+- The same 3-logical-qubit S3 workload, deterministic layout, trajectory count and seed are used on A and B.
+- Physical qubit counts, circuit depth, two-qubit gates, routing/SWAP overhead, solution-quality fidelity and uncertainty are recorded.
 
-## Processor definitions
-
-The processor definitions are stored as explicit JSON files:
+The source processor JSON files are the authoritative runtime inputs:
 
 ```text
 processors/processor_A.json
 processors/processor_B.json
 ```
 
-Processor A uses the 5-node fixed-baseline topology shown in the source material. Processor B uses a 7-node heavy-hex-inspired topology with bounded degree and a cycle-plus-spur structure suitable for deterministic routing experiments.
-
-Both processor files use the same synthetic error rates so the controlled comparison does not intentionally vary the noise parameters between A and B.
-
-## Repository structure
+The benchmark implementation is in:
 
 ```text
-.
-├── README.md
-├── main.ipynb
-├── pyproject.toml
-├── requirements.txt
-├── requirements-practice.txt
-├── LICENSE
-├── processors/
-│   ├── processor_A.json
-│   └── processor_B.json
-├── src/
-│   ├── bell_benchmark.py
-│   ├── metrics.py
-│   ├── problem.py
-│   ├── processors.py
-│   ├── routing.py
-│   ├── source_contract.py
-│   ├── trotter_demo.py
-│   └── visualization.py
-├── scripts/
-│   ├── build_notebook.py
-│   ├── make_practice_figures.py
-│   ├── run_bell_benchmark.py
-│   ├── run_practice.py
-│   └── validate_submission.py
-├── tests/
-├── results/
-└── report/
+src/online_ab.py
+scripts/run_practice.py
 ```
 
-## Installation
+The small 3-qubit workload is embedded into the physical processor statevector using the deterministic layout in `data/practice_config.json`. Routing is derived from the selected processor coupling graph.
 
-### Full environment
+## Reproducibility controls
 
-```bash
-python -m venv .venv
-```
+`data/practice_config.json` records:
 
-Windows PowerShell:
+- logical system parameters;
+- the common trajectory count;
+- one common random seed;
+- one common logical-to-physical layout;
+- direct paths to Processor A and B JSON definitions.
 
-```powershell
-.\.venv\Scripts\Activate.ps1
-```
+The benchmark rejects a controlled comparison when the A/B synthetic noise rates differ.
 
-Linux/macOS:
+## Results
 
-```bash
-source .venv/bin/activate
-```
-
-Install the full environment:
-
-```bash
-python -m pip install --upgrade pip setuptools wheel
-python -m pip install -r requirements.txt
-python -m pip install --no-deps -e .
-```
-
-### Deterministic practice environment
-
-The NumPy reference implementation does not require Qiskit:
-
-```bash
-python -m pip install -r requirements-practice.txt
-python -m pip install --no-deps -e .
-```
-
-## Run the online A/B benchmark
+Run:
 
 ```bash
 python scripts/run_practice.py
 ```
 
-The command writes:
+This writes:
 
 ```text
-results/tables/trotter_AB.csv
-results/tables/AB_comparison.csv
-results/tables/architecture_metrics_AB.csv
-results/tables/processor_metadata_AB.json
-results/figures/AB_performance.png
-results/figures/fidelity_comparison.png
-results/figures/logical_gate_counts.png
-results/figures/processor_A_graph.png
-results/figures/processor_B_graph.png
-
-The figures are regenerated by `scripts/run_practice.py`; CI publishes the generated PNGs as workflow artifacts.
+results/tables/practice_ab_comparison.csv
+results/tables/practice_processor_A_metrics.csv
+results/tables/practice_processor_B_metrics.csv
 ```
 
-## Run the notebook
+Regenerate the architecture and comparison figures with:
+
+```bash
+python scripts/make_practice_figures.py
+```
+
+The architecture figures are generated directly from the processor JSON coupling maps; they are not hand-coded aliases for different topologies.
+
+## Notebook
+
+The notebook is generated by `scripts/build_notebook.py` and its A/B experiment calls the same `run_benchmark()` path used by the command-line benchmark.
+
+Execute it with:
 
 ```bash
 jupyter nbconvert \
@@ -135,41 +85,11 @@ jupyter nbconvert \
   --ExecutePreprocessor.kernel_name=python3
 ```
 
-The notebook uses the same processor JSON definitions and the same logical workload as the command-line benchmark.
+## Tests
 
-## Qiskit transpilation path
+The repository includes unit, validation, Qiskit integration and end-to-end source-contract tests.
 
-The full environment includes Qiskit and Qiskit Aer. The notebook contains a guarded Qiskit path that builds the same logical circuit, routes it with the actual A/B coupling maps and reports depth and operation counts. The deterministic NumPy path remains the reference execution path so the repository is runnable in lightweight environments.
-
-## Required measurements implemented
-
-The benchmark records:
-
-- solution quality / fidelity proxy;
-- uncertainty;
-- circuit-depth proxy;
-- routed two-qubit gate count;
-- SWAP count;
-- physical qubit count;
-- logical single- and two-qubit gate counts;
-- noise assumptions;
-- trajectory count and seed.
-
-The routing layer computes shortest-path distances from the actual coupling graph. Each required SWAP contributes three two-qubit operations to the routed operation count.
-
-## Bell-correlation reference
-
-The Bell-state module implements:
-
-\[
-|\Phi^+\rangle = (|00\rangle + |11\rangle)/\sqrt{2}
-\]
-
-and computes XX, YY and ZZ correlations. The corresponding script is maintained as a separate offline reference and is not used as the online A/B benchmark acceptance metric.
-
-## Validation
-
-Run the complete local verification sequence:
+Run:
 
 ```bash
 python -m pytest -q
@@ -180,40 +100,39 @@ python scripts/make_practice_figures.py
 python scripts/validate_submission.py --practice
 ```
 
-Then execute the notebook from a clean process:
+The end-to-end A/B tests specifically verify that:
 
-```bash
-jupyter nbconvert \
-  --to notebook \
-  --execute main.ipynb \
-  --output executed_main.ipynb \
-  --ExecutePreprocessor.timeout=180 \
-  --ExecutePreprocessor.kernel_name=python3
-```
+- Processor A resolves to 5 physical qubits.
+- Processor B resolves to 7 physical qubits.
+- the runtime processor names come from the JSON definitions;
+- both rows use the same seed and trajectory count;
+- the noise rates are identical;
+- routing produces the expected 0-SWAP versus 8-SWAP result for the documented 4-step workload;
+- the generated result table uses the source-document provenance marker.
 
-## CI
+## Validation hardening
 
-`.github/workflows/ci.yml` runs the deterministic test matrix, the full Qiskit environment, benchmark generation, repository validation, notebook dependency validation, notebook execution and artifact publication.
+Submission validation additionally checks:
 
-The workflow uses a concurrency group so superseded pushes on the same branch or pull request cancel older runs.
-
-## Engineering invariants
-
-The repository rejects:
-
-- malformed processor JSON;
 - duplicate JSON keys;
-- disconnected coupling graphs;
-- duplicate topology edges;
-- invalid qubit indices;
-- non-finite noise parameters;
-- empty logical workloads;
-- invalid trajectory counts;
-- non-deterministic seeds;
-- mismatched processor definitions;
-- missing A/B benchmark artifacts;
-- active Processor C/D online implementations.
+- exact source Processor A/B definitions;
+- controlled noise equality;
+- benchmark configuration paths;
+- benchmark provenance;
+- physical and logical qubit counts;
+- routing and two-qubit gate accounting;
+- required notebook source paths;
+- stale practice-processor markers;
+- generated architecture-figure provenance.
+
+## Qiskit path
+
+The repository retains a Qiskit transpilation adapter and integration tests. The source-defined NumPy reference benchmark is the deterministic acceptance path for the synthetic processor experiment; the Qiskit path verifies transpilation behavior against coupling-map definitions.
+
+## Offline Bell reference
+
+The source document reserves Bell correlation and protection analysis for the offline C/D stage. The repository keeps the Bell module and benchmark separate from the online A/B acceptance benchmark. Stale Bell-rendered figures are not used as online evidence.
 
 ## AI-assisted development
 
-AI assistance was used during implementation. Every submitted result must remain understandable, reproducible and reviewable by the implementation team.
+AI assistance was used during implementation. The submitted result remains reproducible, inspectable and reviewable by the implementation team.
