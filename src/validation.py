@@ -131,6 +131,24 @@ def validate_processor_mapping(
         seen.add(pair)
         normalized.append(pair)
 
+    if num_qubits > 1:
+        adjacency = [[] for _ in range(num_qubits)]
+        for a, b in normalized:
+            adjacency[a].append(b)
+            adjacency[b].append(a)
+        seen_qubits = {0}
+        queue = [0]
+        head = 0
+        while head < len(queue):
+            node = queue[head]
+            head += 1
+            for neighbor in adjacency[node]:
+                if neighbor not in seen_qubits:
+                    seen_qubits.add(neighbor)
+                    queue.append(neighbor)
+        if len(seen_qubits) != num_qubits:
+            raise ValidationError("coupling_map must define a connected processor graph.")
+
     return tuple(normalized)
 
 
