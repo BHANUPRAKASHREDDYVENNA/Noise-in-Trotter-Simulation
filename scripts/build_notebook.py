@@ -48,8 +48,18 @@ def code(text: str) -> dict:
 
 
 def build() -> None:
+    header_text = (
+        "# IBM Partner Plus · SRM University-AP Qiskit Fall Fest 2026\n"
+        "## Track 3: Quantum Simulation (Hamiltonian Dynamics)\n"
+        "### Problem Statement PS-S3: Noise Accumulation in Trotter Circuits\n\n"
+        "> **Team Name:** `QUANTUM'S`  \n"
+        "> **Team Lead:** **Bhanu Prakash Venna**  \n"
+        "> **Public Repository:** [https://github.com/BHANUPRAKASHREDDYVENNA/Noise-in-Trotter-Simulation](https://github.com/BHANUPRAKASHREDDYVENNA/Noise-in-Trotter-Simulation)\n\n"
+        "---\n\n"
+        "## S3: Noise in Trotter Simulation\n"
+    )
     cells = [
-        markdown("# Qiskit Fall Fest 2026 — Phase 1\n## S3: Noise in Trotter Simulation\n"),
+        markdown(header_text),
         code("from pathlib import Path\nROOT = Path.cwd()\n"),
     ]
 
@@ -85,7 +95,10 @@ def build() -> None:
             cells.append(code(
                 "from scripts.run_practice import run_benchmark\n"
                 "ab_results = run_benchmark()\n"
-                "display(ab_results)\n"
+                "try:\n"
+                "    display(ab_results)\n"
+                "except NameError:\n"
+                "    print(ab_results)\n"
             ))
         elif title.startswith("15."):
             cells.append(code(
@@ -99,6 +112,28 @@ def build() -> None:
                 "    print(folder)\n"
                 "    for path in sorted(folder.glob('*')):\n"
                 "        print(' -', path.name)\n"
+            ))
+        elif title.startswith("19."):
+            cells.append(code(
+                "# Advanced Builder Track: Geometry-Aware Layout & 2nd-Order Trotter Optimization\n"
+                "from src.advanced_optimization import run_advanced_optimization_suite\n"
+                "adv_res = run_advanced_optimization_suite(\n"
+                "    str(ROOT / 'processors' / 'processor_A.json'),\n"
+                "    str(ROOT / 'processors' / 'processor_B.json'),\n"
+                "    trajectories=200,\n"
+                "    seed=2026,\n"
+                ")\n"
+                "print('--- Geometry-Aware Layout Optimization (Processor B SWAPs: 8 -> 0) ---')\n"
+                "print(adv_res['layout_comparison'].to_string(index=False))\n"
+                "print('\\n--- 1st vs 2nd-Order Trotter Algorithmic Error Scaling ---')\n"
+                "print(adv_res['trotter_scaling'].to_string(index=False))\n"
+            ))
+            cells.append(code(
+                "# Advanced Research Track: 4-Spin TFIM Trotter Noise vs Scipy Matrix Exponential\n"
+                "from src.qiskit_s3_tfim import run_ps_s3_benchmark\n"
+                "tfim_df = run_ps_s3_benchmark(trotter_steps=(1, 2, 4), total_time=2.0, shots=1024, seed=42)\n"
+                "print('--- 4-Spin TFIM Simulation vs Classical Ground Truth ---')\n"
+                "print(tfim_df[['processor', 'trotter_steps', 'total_cx', 'algorithmic_fidelity', 'noisy_sim_z0', 'noisy_abs_error']].to_string(index=False))\n"
             ))
         elif title.startswith("22."):
             cells.append(code(
