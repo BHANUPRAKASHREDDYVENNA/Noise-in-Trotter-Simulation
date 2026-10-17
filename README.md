@@ -1,5 +1,25 @@
 # Qiskit Fall Fest 2026 — Phase 1 S3 Architecture Benchmark
 
+> **IBM Partner Plus · SRM University-AP Qiskit Fall Fest 2026 Hackathon**  
+> **Team Name:** `QUANTUM'S`  
+> **Team Member & Contributions:** **Bhanu Prakash Venna** (Team Lead) — End-to-end TFIM Hamiltonian modeling, Trotterized circuit construction, geometry-aware layout compilation, 2nd-order symmetric Trotterization ($S_2$), zero-noise extrapolation (ZNE) error mitigation, classical exact verification (`scipy.linalg.expm`), and automated CI test suite.  
+> **Track:** Track 3 — Quantum Simulation (Hamiltonian Dynamics)  
+> **Problem Statement:** **PS-S3: Noise Accumulation in Trotter Circuits**  
+> **Public Repository:** [https://github.com/BHANUPRAKASHREDDYVENNA/Noise-in-Trotter-Simulation](https://github.com/BHANUPRAKASHREDDYVENNA/Noise-in-Trotter-Simulation)
+
+---
+
+## 🏆 Submission Summary & Algorithmic Highlights
+
+- **Problem Formulation:** 4-spin 1D Transverse-Field Ising Model (TFIM) $H = -J \sum_{i=0}^2 Z_i Z_{i+1} - g \sum_{i=0}^3 X_i$ simulated under real-time evolution $U(t) = \exp(-i H t)$ up to $t = 2.0$.
+- **Exact Classical Ground Truth:** Computed via matrix exponentiation $\texttt{scipy.linalg.expm}$ to calculate exact statevectors and observable expectations $\langle Z_0(t)\rangle$.
+- **Noise Modeling:** Qiskit `AerSimulator` with depolarizing error ($p_1 = 0.001$, $p_2 = 0.005$ to $0.01$) and readout error ($0.01$) across 4096 shots.
+- **Hardware Topology & Layout Optimization:** Geometry-aware graph isomorphism mapping eliminates **100% of routing SWAP gates (8 $\to$ 0)** on Processor B, reducing two-qubit gate count from 28 to 4 and elevating fidelity from **0.7822 to 0.9704**.
+- **Error Mitigation & Higher-Order Trotter:** Implemented 2nd-order symmetric Trotter-Suzuki ($S_2$) reducing algorithmic error by >99% at $n=4$, alongside Digital Unitary Gate Folding (ZNE) and Tensored Readout Error Inversion (TEM).
+- **Verification Status:** 52/52 Pytest unit/integration tests passing, 100% reproducible, full CI pipeline verified.
+
+---
+
 ## Source contract
 
 The supplied Phase-1 source document is the sole contract for this repository and is preserved at:
