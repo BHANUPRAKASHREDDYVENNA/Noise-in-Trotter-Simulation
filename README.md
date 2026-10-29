@@ -1,60 +1,74 @@
-# Partner Plus IBM Qiskit Fall Fest 2026 — Phase 2 PS-S3 Submission
-## Track 3: Quantum Simulation (Hamiltonian Dynamics)
-### Problem Statement PS-S3: Noise Accumulation in Trotter Circuits
+# Partner Plus IBM Qiskit Fall Fest 2026 — Track 3: Quantum Simulation
+## PS-S3: Noise Accumulation in Trotter Circuits
 
-> **Event:** IBM Partner Plus · SRM University-AP Qiskit Fall Fest 2026 On-Campus Hackathon (Phase 2)  
+> **Event:** IBM Partner Plus · SRM University-AP Qiskit Fall Fest 2026 Hackathon  
 > **Team Name:** `QUANTUM'S`  
 > **Team Lead:** **Bhanu Prakash Venna**  
 > **Affiliation:** Department of Computer Science & Engineering, SRM University-AP  
 > **Public Repository:** [https://github.com/BHANUPRAKASHREDDYVENNA/Noise-in-Trotter-Simulation](https://github.com/BHANUPRAKASHREDDYVENNA/Noise-in-Trotter-Simulation)  
-> **Hackathon Portal:** [https://www.qffsrmap2026.com/learning/hackathon](https://www.qffsrmap2026.com/learning/hackathon)  
-> **Deadline:** Day 2 (30 October 2026) at 5:40 PM IST
+> **Hackathon Portal:** [https://www.qffsrmap2026.com/learning/hackathon](https://www.qffsrmap2026.com/learning/hackathon)
 
 ---
 
 ## 📁 Repository Organization
 
-This repository is organized to maintain a clean separation between the preserved Phase One historical milestone and active root-level development:
+This repository is organized into two clearly separated development environments:
 
-- **`Phase One/`** — Archived and preserved Phase One implementation, benchmark suite, 23-section notebook (`Phase One/main.ipynb`), report (`Phase One/report.md`), figures, tables, and 52 passing unit tests. Everything submitted for Phase One is 100% frozen, self-contained, and intact inside this directory.
-- **Repository Root (`/`)** — Active development workspace for all current work (including Phase Two) and all future phases. Contains the active Phase 2 master notebook (`main.ipynb`), publication report (`report.md`), official simulation engine (`qff_sim.py`), Processor D design (`processors/processor_D.json`), benchmark runner (`scripts/run_phase2_s3.py`), and test suite (`tests/test_phase2_s3.py`).
+- **`Phase1/`** — **Archived Historical Milestone:** Contains all preserved Phase 1 source files, notebooks, reports, datasets, configurations, scripts, figures, and unit tests (52 tests passing). Everything submitted for Phase 1 is preserved intact and independently executable.
+- **`Phase2/`** — **Active Phase 2 Development & Competition Deliverables:** Contains all Phase 2 quantum simulation models, custom Processor D co-design, official `qff_sim.py`, benchmark pipelines, master notebook (`main.ipynb`), scientific publication report (`report.md`), high-resolution figures, CSV tables, and regression test suite (58 tests passing).
+- **Repository Root (`/`)** — Houses essential shared infrastructure including `.github/workflows/`, `pyproject.toml`, `.gitignore`, `requirements.txt`, `LICENSE`, and this master documentation.
 
-> **Architectural Standard:** In strict accordance with competition rules, no `Phase Two/` container directory is created; all active development continues directly at the repository root.
+```text
+Noise-in-Trotter-Simulation/
+│
+├── Phase1/                                    # Preserved Phase 1 historical milestone
+│   ├── main.ipynb                             # Original Phase 1 master notebook (23 sections)
+│   ├── report.md                              # Phase 1 architectural analysis report
+│   ├── README.md                              # Phase 1 documentation
+│   ├── processors/                            # Processors A, B, B_9q, D
+│   ├── data/                                  # Practice configurations & guide settings
+│   ├── docs/                                  # Phase 1 scope & source contract documents
+│   ├── results/                               # Phase 1 SVG figures & CSV tables
+│   ├── scripts/                               # Phase 1 benchmark scripts
+│   ├── src/                                   # Phase 1 source code modules
+│   └── tests/                                 # Phase 1 unit tests (52 tests passing)
+│
+├── Phase2/                                    # Active Phase 2 development & deliverables
+│   ├── main.ipynb                             # Pre-executed Phase 2 master notebook (0 errors)
+│   ├── report.md                              # Full Phase 2 scientific publication report
+│   ├── README.md                              # Phase 2 documentation & result summary
+│   ├── qff_sim.py                             # Official Phase 2 simulation module
+│   ├── check_processor_d.py                   # Official Phase 2 validator (entry point)
+│   ├── processors/                            # Processors A, B, D (9Q cubic hybrid)
+│   ├── data/                                  # Locked 4-spin ring TFIM Hamiltonian & manifest
+│   ├── scripts/                               # Phase 2 benchmark pipeline & figure scripts
+│   ├── src/                                   # Phase 2 source code modules
+│   ├── tests/                                 # Phase 2 unit & regression tests (58 tests passing)
+│   ├── results/                               # Phase 2 publication figures & CSV tables
+│   │   ├── tables/                            # bell.csv, s3_scan.csv, s3_summary.csv, etc.
+│   │   └── figures/                           # High-res publication PNG plots
+│   └── phase2_kit/                            # Official problem statement kit
+│
+├── .github/workflows/                         # Shared CI/CD workflows
+├── pyproject.toml                             # Shared package & test configuration
+├── requirements.txt                           # Pinned dependencies
+├── LICENSE                                    # Project license
+├── SECURITY.md                                # Security policy
+├── .gitignore                                 # Git exclusion rules
+└── README.md                                  # Repository overview (this file)
+```
 
 ---
 
-## 🏆 Executive Summary & Headline Discoveries
+## 🏆 Phase 2 Benchmark Results Summary
 
-This repository contains the complete, experimentally validated, and reproducible Phase 2 submission for **Problem Statement PS-S3: Noise Accumulation in Trotter Circuits**.
+*Complete details, theoretical derivations, and figures are available in [`Phase2/report.md`](Phase2/report.md) and [`Phase2/main.ipynb`](Phase2/main.ipynb).*
 
-We investigate the quantum dynamics of a 4-spin one-dimensional Transverse-Field Ising Model (TFIM) on a **periodic ring** evolved to target time $T = 2.0$, quantitatively resolving the fundamental trade-off between algorithmic Trotter discretization error and physical device noise accumulation:
-$$\text{Total Error}(n) \approx \underbrace{\mathcal{O}\left(\frac{T^2}{n}\right)}_{\text{Algorithmic Discretization Error}} + \underbrace{\mathcal{O}\left(n \cdot N_{\rm CX/step} \cdot p_2\right)}_{\text{Physical Gate Noise Accumulation}}$$
+### Optimal Trotter Step Counts ($n^*$) & Peak Fidelity
+*Physical system: 4-spin 1D periodic ring TFIM ($J=1.0, g=1.0$), initial state $|1010\rangle$, evolution time $T=2.0$.*  
+*Exact classical reference: $M_s^{\rm exact}(T=2.0) = 0.652444$.*
 
-### Key Discoveries:
-1. **The Trotter-Noise Crossover ($n^*$):**  
-   Across a 12-point Trotter step grid $n \in \{1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 16\}$, we identify an optimal step count **$n^* = 7$** for native 4-cycle architectures (Processors B and D) under official standard noise ($p_1=0.001, p_2=0.005, p_{\rm ro}=0.01$), achieving peak density-matrix state fidelity **$\mathcal{F}^* = 0.6628$**.
-2. **Noise Scaling Dynamics on Custom Processor D:**  
-   Sweeping the noise scaling factor directly validates the theoretical scaling of the crossover point:
-   - **Low Noise ($0.5\times$):** Discretization error dominates longer, shifting the optimum upward to **$n^* = 8$** with peak fidelity **$\mathcal{F}^* = 0.7821$**.
-   - **Standard Noise ($1.0\times$):** Balanced regime yields **$n^* = 7$** with peak fidelity **$\mathcal{F}^* = 0.6628$**.
-   - **High Noise ($2.0\times$):** Physical gate errors accumulate twice as fast, suppressing deep circuits and shifting the optimum downward to **$n^* = 6$** with peak fidelity **$\mathcal{F}^* = 0.5031$**.
-3. **Topological Routing Penalty on Tree Graphs (Processor A):**  
-   Processor A (5-qubit tree baseline) lacks a 4-cycle. Simulating the periodic boundary condition bond $(3, 0)$ requires routing SWAP networks (**11 SWAP gates / 33 routing CX gates** at $n=6$), exploding two-qubit depth from 24 to 57 and depressing peak fidelity to **$0.5774$** (an absolute degradation of $8.54\%$ and relative loss of $12.89\%$ compared to Processor D).
-4. **Custom Processor D Co-Design (Objective 2):**  
-   Our 9-qubit cubic hypercube hybrid architecture embeds native 4-cycles with diameter 3, average path length 1.778, and maximum degree 4. It executes the ring TFIM with **zero routing SWAPs**, passing all official constraints verified by `check_processor_d.py`.
-5. **Entanglement Verification (Objective 1):**  
-   Bell-state parity measurements on Processor D yield $\mathcal{F} = 0.9633 \pm 0.0021$ on adjacent pair $(0, 1)$ ($d=1$, 1 CX) and $\mathcal{F} = 0.9476 \pm 0.0025$ on distant pair $(0, 6)$ ($d=3$, 7 CX due to 2 routing SWAPs).
-6. **Error Mitigation Advantage (Bonus):**  
-   Digital Zero-Noise Extrapolation (ZNE) via unitary gate folding ($\lambda \in [1, 3, 5]$) recovers the unmitigated staggered magnetization from $M_s = 0.4403$ (error $0.2121$) to $M_s^{\rm ZNE} = 0.4971$ (error $0.1553$), demonstrating a **$>26.8\%$ error reduction**.
-
----
-
-## 📊 Phase 2 Benchmark Results Summary
-
-### Table 1: Optimal Trotter Step Counts ($n^*$) & Peak Fidelity
-*Source: `results/tables/s3_summary.csv` (Exact classical ground truth: $M_s^{\rm exact}(T=2.0) = 0.652444$)*
-
-| Processor | Topology | Noise Scale | Routing SWAPs | Optimal Steps $n^*$ | Peak State Fidelity $\mathcal{F}^*$ | Ideal Trotter Fidelity | Noisy Staggered Magnetization $M_s(n^*)$ |
+| Processor | Topology | Noise Scale | Routing SWAPs | Optimal Steps $n^*$ | Peak State Fidelity $\mathcal{F}^*$ | Ideal Trotter Fidelity | Noisy Magnetization $M_s(n^*)$ |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Processor A** | 5Q Tree Baseline | $1.0\times$ | **11** | **6** | **0.5774** | 0.9934 | $0.4131 \pm 0.0142$ |
 | **Processor B** | 9Q Heavy-Hex Baseline | $1.0\times$ | **0** | **7** | **0.6628** | 0.9951 | $0.4403 \pm 0.0141$ |
@@ -62,145 +76,58 @@ $$\text{Total Error}(n) \approx \underbrace{\mathcal{O}\left(\frac{T^2}{n}\right
 | **Processor D** | 9Q Cubic Hybrid (Ours) | $0.5\times$ | **0** | **8** | **0.7821** | 0.9963 | $0.5361 \pm 0.0132$ |
 | **Processor D** | 9Q Cubic Hybrid (Ours) | $2.0\times$ | **0** | **6** | **0.5031** | 0.9934 | $0.3242 \pm 0.0148$ |
 
-### Table 2: Objective 1 Bell-State Entanglement on Processor D
-*Source: `results/tables/bell.csv` ($N = 4,096$ shots per basis)*
+### Objective 1 Bell-State Entanglement on Processor D
+- **Near Pair `(0, 1)` ($d=1$, 1 CX):** $\mathcal{F} = 0.9633 \pm 0.0021$
+- **Far Pair `(0, 6)` ($d=3$, 7 CX due to 2 routing SWAPs):** $\mathcal{F} = 0.9476 \pm 0.0025$
 
-| Physical Pair | Graph Distance | Execution Mode | $\langle XX \rangle \pm \mathrm{SE}$ | $\langle YY \rangle \pm \mathrm{SE}$ | $\langle ZZ \rangle \pm \mathrm{SE}$ | Bell State Fidelity $\mathcal{F} \pm \mathrm{SE}$ | 2Q CX Gates |
-| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| `(0, 1)` | $d=1$ (Near) | ideal | $1.0000 \pm 0.0000$ | $-1.0000 \pm 0.0000$ | $1.0000 \pm 0.0000$ | **$1.0000 \pm 0.0000$** | 1 |
-| `(0, 1)` | $d=1$ (Near) | noisy | $0.9497 \pm 0.0049$ | $-0.9507 \pm 0.0048$ | $0.9531 \pm 0.0047$ | **$0.9633 \pm 0.0021$** | 1 |
-| `(0, 6)` | $d=3$ (Far) | ideal | $1.0000 \pm 0.0000$ | $-1.0000 \pm 0.0000$ | $1.0000 \pm 0.0000$ | **$1.0000 \pm 0.0000$** | 7 |
-| `(0, 6)` | $d=3$ (Far) | noisy | $0.9312 \pm 0.0057$ | $-0.9341 \pm 0.0056$ | $0.9258 \pm 0.0059$ | **$0.9476 \pm 0.0025$** | 7 |
-
-### Table 3: Bonus Zero-Noise Extrapolation (ZNE) at $n^* = 7$ on Processor D
-*Source: `results/tables/mitigation.csv` ($12,288$ shots total)*
-
-| Scale Factor $\lambda$ | Folding Order $k$ | CX Gates | Measured $M_s \pm \mathrm{SE}$ | Extrapolated $M_s^{\rm ZNE}$ | Exact Ground Truth $M_s$ | Absolute Error | Relative Error Reduction |
-| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| $\lambda = 1$ (Raw) | 0 | 56 | $0.4403 \pm 0.0141$ | — | $0.652444$ | $0.2121$ | Baseline |
-| $\lambda = 3$ | 1 | 168 | $0.3276 \pm 0.0148$ | — | $0.652444$ | $0.3248$ | — |
-| $\lambda = 5$ | 2 | 280 | $0.2114 \pm 0.0152$ | — | $0.652444$ | $0.4410$ | — |
-| **$\lambda \to 0$ (Mitigated)** | — | — | — | **$0.4971$** | **$0.652444$** | **$0.1553$** | **$> 26.8\%$ Reduction** |
+### Bonus Zero-Noise Extrapolation (ZNE) on Processor D
+- **Unmitigated Error:** $0.2121$ ($M_s = 0.4403$)
+- **Mitigated Error:** **$0.1553$** ($M_s = 0.4971$) — **$>26.8\%$ relative error reduction**
 
 ---
 
-## 🛠️ Repository Architecture & Deliverables
+## 🚀 Execution & Reproducibility Guide
 
-```
-Noise-in-Trotter-Simulation/
-├── Phase One/                         # Archived & preserved Phase One implementation
-│   ├── main.ipynb                     # Original Phase One 23-section notebook
-│   ├── report.md                      # Phase One analysis report
-│   ├── README.md                      # Phase One overview
-│   ├── src/                           # Phase One source modules
-│   ├── processors/                    # Phase One processors A, B, B_9q, D
-│   ├── results/                       # Phase One SVG figures & CSV tables
-│   ├── scripts/                       # Phase One benchmark & figure scripts
-│   └── tests/                         # Phase One unit tests (52 tests passing)
-│
-├── README.md                          # Master documentation & benchmark summary
-├── report.md                          # Full Phase 2 scientific report (publication format)
-├── main.ipynb                         # Pre-executed Phase 2 master notebook with rich outputs
-├── qff_sim.py                         # Authoritative organizer module
-├── check_processor_d.py               # Official Phase 2 validator (root entry point)
-├── processors/
-│   ├── processor_A.json               # 5-qubit tree baseline
-│   ├── processor_B.json               # 9-qubit heavy-hex baseline
-│   └── processor_D.json               # 9-qubit cubic hypercube hybrid (checker-verified)
-├── tools/
-│   └── check_processor_d.py           # Official Phase 2 validator (tools entry point)
-├── data/
-│   ├── instances_index.json           # Challenge instance manifest
-│   └── s3/
-│       └── tfim_ring_N4_g1.00.json    # Locked 4-spin ring TFIM Hamiltonian
-├── scripts/
-│   ├── run_phase2_s3.py               # Complete Phase 2 benchmark pipeline
-│   ├── make_phase2_figures.py         # Publication-grade figure generator
-│   ├── build_phase2_notebook.py       # Deterministic notebook builder
-│   └── validate_submission.py         # Automated contract validator
-├── results/
-│   ├── tables/
-│   │   ├── bell.csv                   # Objective 1 Bell states
-│   │   ├── s3_scan.csv                # 60-row step scan (n in 1..16)
-│   │   ├── s3_summary.csv             # Crossover summary (n*, peak F)
-│   │   ├── resources.csv              # Gate count & routing decomposition
-│   │   └── mitigation.csv             # Zero-noise extrapolation
-│   └── figures/
-│       ├── s3_fidelity_crossover.png  # Fidelity crossover & staggered magnetization
-│       ├── s3_noise_sweep_D.png       # 0.5x, 1.0x, 2.0x noise scaling shifts
-│       ├── s3_gate_split.png          # Logical vs SWAP routing CX gate split
-│       ├── bell_correlations_D.png    # Parity bars & tomography fidelity
-│       ├── s3_zne_mitigation.png      # Richardson ZNE linear extrapolation
-│       └── processor_topologies.png   # Graph comparison (A, B, D)
-└── tests/
-    ├── test_phase2_s3.py              # Phase 2 unit & regression tests
-    └── test_*.py                      # Full test suite (58 tests passing)
-```
-
----
-
-## 🚀 Quickstart & Complete Reproducibility Guide
-
-The entire Phase 2 submission is 100% reproducible with deterministic seeds (`seed_transpiler=42`, `seed_simulator=42`).
-
-### 1. Environment Setup
+### 1. Global Setup
 ```bash
 git clone https://github.com/BHANUPRAKASHREDDYVENNA/Noise-in-Trotter-Simulation.git
 cd Noise-in-Trotter-Simulation
 pip install -r requirements.txt
 ```
 
-### 2. Validate Custom Processor D
+### 2. Running Phase 2 (Active Competition Suite)
 ```bash
+cd Phase2
+
+# Validate custom Processor D
 python check_processor_d.py processors/processor_D.json 4
-```
-*Expected Output:* `OK - Processor D satisfies all design rules.`
 
-### 3. Run Phase 2 Benchmark Suite
-```bash
+# Run complete benchmark campaign (~2 minutes)
 python scripts/run_phase2_s3.py
-```
-*Generates all 5 CSV tables in `results/tables/` within ~2 minutes.*
 
-### 4. Render Publication Figures
-```bash
+# Render publication figures
 python scripts/make_phase2_figures.py
-```
-*Renders 6 high-resolution publication figures in `results/figures/`.*
 
-### 5. Execute Test Suite
-```bash
+# Run Phase 2 unit & regression tests
 python -m pytest -q
-```
-*Expected Output:* `58 passed in 10.25s` (100% pass rate).
 
-### 6. Execute Master Notebook
+# Execute Phase 2 master notebook
+jupyter nbconvert --to notebook --execute main.ipynb
+```
+
+### 3. Running Phase 1 (Preserved Historical Archive)
 ```bash
-jupyter nbconvert --to notebook --execute main.ipynb --output executed_main.ipynb
+cd Phase1
+
+# Run Phase 1 submission validation
+python scripts/validate_submission.py --practice
+
+# Run Phase 1 tests
+python -m pytest -q
+
+# Execute Phase 1 notebook
+jupyter nbconvert --to notebook --execute main.ipynb
 ```
-
----
-
-## 🔬 Scientific Methodology & Controlled Comparisons
-
-- **Controlled Noise Rates:** Standard device noise rates ($p_1 = 0.001$, $p_2 = 0.005$, $p_{\rm ro} = 0.01$) are identical across all processors to isolate the geometric effect of hardware topology from confounding device variations.
-- **Controlled Transpilation:** Every circuit is compiled via Qiskit's `optimization_level=1` using SABRE layout and routing passes initialized with fixed deterministic seeds (`seed_transpiler=42`).
-- **Exact Ground Truth:** Reference states are computed via matrix exponential $\exp(-iHT)|\psi(0)\rangle$ using SciPy sparse linear algebra, eliminating any classical approximation errors.
-- **Uncertainty Quantification:** Shot noise for parity observables and staggered magnetization is reported as analytical standard errors derived from binomial sample variance.
-
----
-
-## 📜 Historical Provenance & Baseline Contract Preservation
-
-This repository strictly preserves the Phase 1 source document and contract:
-- **Processor A:** 5 physical qubits, fixed baseline graph (`processors/processor_A.json`).
-- **Processor B:** 9 physical qubits (and 7-qubit subgraphs), heavy-hex-inspired graph (`processors/processor_B.json`).
-- Circuit metrics track Depth, two-qubit gate count, SWAP count, and physical qubits.
-- The baseline A/B verification check is executable via:
-  ```bash
-  python scripts/validate_submission.py --practice
-  ```
-  *Expected Output:* `Repository validation: PASS`
 
 ---
 
@@ -208,6 +135,7 @@ This repository strictly preserves the Phase 1 source document and contract:
 
 - **Team Name:** `QUANTUM'S`
 - **Team Lead:** **Bhanu Prakash Venna**  
-- **Role:** Theoretical modeling, circuit construction, graph co-design, benchmark execution, error mitigation, validation suite, and scientific reporting.
-- **Institution:** Department of Computer Science & Engineering, SRM University-AP.
-- **Mentorship:** IBM Partner Plus & SRM University-AP Hackathon Technical Committee.
+- **Track:** Track 3 — Quantum Simulation (Hamiltonian Dynamics)  
+- **Problem Statement:** PS-S3: Noise Accumulation in Trotter Circuits  
+- **Department:** Department of Computer Science & Engineering, SRM University-AP  
+- **Mentorship:** IBM Partner Plus & SRM University-AP Hackathon Technical Committee

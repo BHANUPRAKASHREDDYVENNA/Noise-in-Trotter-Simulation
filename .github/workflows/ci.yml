@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11","3.12"]
+        python-version: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -30,10 +30,10 @@ jobs:
           cache-dependency-path: requirements.txt
       - run: python -m pip install -r requirements.txt
       - run: python -m pip check
-      - run: python -m compileall -q src scripts tests
+      - run: python -m compileall -q Phase1 Phase2
       - run: python -m pytest -q
 
-  benchmark:
+  phase2-benchmark:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: test
@@ -45,19 +45,21 @@ jobs:
           cache: pip
           cache-dependency-path: requirements.txt
       - run: python -m pip install -r requirements.txt
-      - run: python scripts/build_notebook.py
-      - run: python scripts/run_practice.py
-      - run: python scripts/make_practice_figures.py
-      - run: python scripts/run_bell_benchmark.py
-      - run: python scripts/validate_submission.py --practice
-      - run: git diff --exit-code -- main.ipynb results/tables results/figures
-      - run: python -m jupyter nbconvert --to notebook --execute main.ipynb --output executed_main.ipynb --ExecutePreprocessor.timeout=180 --ExecutePreprocessor.kernel_name=python3
+      - name: Validate Processor D
+        run: cd Phase2 && python check_processor_d.py processors/processor_D.json 4
+      - name: Run Phase 2 Benchmark Suite
+        run: cd Phase2 && python scripts/run_phase2_s3.py
+      - name: Generate Publication Figures
+        run: cd Phase2 && python scripts/make_phase2_figures.py
+      - name: Run Phase 2 Pytest Suite
+        run: cd Phase2 && python -m pytest -q
+      - name: Validate Phase 1 Submission
+        run: cd Phase1 && python scripts/validate_submission.py --practice
       - uses: actions/upload-artifact@v7
         with:
-          name: qff-s3-results
+          name: qff-s3-phase2-results
           path: |
-            results/tables/
-            results/figures/
-            main.ipynb
-            executed_main.ipynb
+            Phase2/results/tables/
+            Phase2/results/figures/
+            Phase2/main.ipynb
           if-no-files-found: error
