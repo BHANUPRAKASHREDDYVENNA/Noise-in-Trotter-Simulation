@@ -129,6 +129,23 @@ python -m pytest -q
 jupyter nbconvert --to notebook --execute main.ipynb
 ```
 
+### 4. Official SRM University-AP QFF 2026 Environment Reproduction
+*Fully compliant with `QFF_2026_Setup_Guide_Windows.pdf` and `C:\QFF\QFF2026_TEST_REPORT.txt` (see [`Phase2/docs/qff_2026_environment_specification.md`](Phase2/docs/qff_2026_environment_specification.md)):*
+
+```powershell
+# Run the combined 110-test master suite in official hackathon venv:
+cd Noise-in-Trotter-Simulation
+C:\QFF\.qff2026-venv\Scripts\python.exe -m pytest -q
+
+# Validate Processor D with official venv:
+cd Phase2
+C:\QFF\.qff2026-venv\Scripts\python.exe check_processor_d.py processors/processor_D.json 4
+
+# Launch JupyterLab using official hackathon setup:
+C:\QFF\.qff2026-venv\Scripts\jupyter-lab.exe
+# Open Phase2/main.ipynb and select registered kernel: 'Python (QFF 2026)'
+```
+
 ---
 
 ## 👥 Team & Attribution

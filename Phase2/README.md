@@ -140,3 +140,18 @@ python -m pytest -q
 # 5. Execute master notebook
 jupyter nbconvert --to notebook --execute main.ipynb
 ```
+
+### 🎓 Official SRM University-AP QFF 2026 Environment Reproduction
+*Fully compliant with `QFF_2026_Setup_Guide_Windows.pdf` and `C:\QFF\QFF2026_TEST_REPORT.txt` (see [`docs/qff_2026_environment_specification.md`](docs/qff_2026_environment_specification.md)):*
+
+```powershell
+# 1. Validate custom Processor D with official venv:
+C:\QFF\.qff2026-venv\Scripts\python.exe check_processor_d.py processors/processor_D.json 4
+
+# 2. Run Phase 2 test suite with official venv:
+C:\QFF\.qff2026-venv\Scripts\python.exe -m pytest -q
+
+# 3. Launch official JupyterLab interface:
+C:\QFF\.qff2026-venv\Scripts\jupyter-lab.exe
+# Open main.ipynb and select registered kernel: 'Python (QFF 2026)'
+```
