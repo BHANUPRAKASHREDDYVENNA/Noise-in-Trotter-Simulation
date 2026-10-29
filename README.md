@@ -12,6 +12,17 @@
 
 ---
 
+## 📁 Repository Organization
+
+This repository is organized to maintain a clean separation between the preserved Phase One historical milestone and active root-level development:
+
+- **`Phase One/`** — Archived and preserved Phase One implementation, benchmark suite, 23-section notebook (`Phase One/main.ipynb`), report (`Phase One/report.md`), figures, tables, and 52 passing unit tests. Everything submitted for Phase One is 100% frozen, self-contained, and intact inside this directory.
+- **Repository Root (`/`)** — Active development workspace for all current work (including Phase Two) and all future phases. Contains the active Phase 2 master notebook (`main.ipynb`), publication report (`report.md`), official simulation engine (`qff_sim.py`), Processor D design (`processors/processor_D.json`), benchmark runner (`scripts/run_phase2_s3.py`), and test suite (`tests/test_phase2_s3.py`).
+
+> **Architectural Standard:** In strict accordance with competition rules, no `Phase Two/` container directory is created; all active development continues directly at the repository root.
+
+---
+
 ## 🏆 Executive Summary & Headline Discoveries
 
 This repository contains the complete, experimentally validated, and reproducible Phase 2 submission for **Problem Statement PS-S3: Noise Accumulation in Trotter Circuits**.
@@ -30,7 +41,7 @@ $$\text{Total Error}(n) \approx \underbrace{\mathcal{O}\left(\frac{T^2}{n}\right
 3. **Topological Routing Penalty on Tree Graphs (Processor A):**  
    Processor A (5-qubit tree baseline) lacks a 4-cycle. Simulating the periodic boundary condition bond $(3, 0)$ requires routing SWAP networks (**11 SWAP gates / 33 routing CX gates** at $n=6$), exploding two-qubit depth from 24 to 57 and depressing peak fidelity to **$0.5774$** (an absolute degradation of $8.54\%$ and relative loss of $12.89\%$ compared to Processor D).
 4. **Custom Processor D Co-Design (Objective 2):**  
-   Our 9-qubit cubic hypercube hybrid architecture embeds native 4-cycles with diameter 3, average path length 1.778, and maximum degree 4. It executes the ring TFIM with **zero routing SWAPs**, passing all official constraints verified by `tools/check_processor_d.py`.
+   Our 9-qubit cubic hypercube hybrid architecture embeds native 4-cycles with diameter 3, average path length 1.778, and maximum degree 4. It executes the ring TFIM with **zero routing SWAPs**, passing all official constraints verified by `check_processor_d.py`.
 5. **Entanglement Verification (Objective 1):**  
    Bell-state parity measurements on Processor D yield $\mathcal{F} = 0.9633 \pm 0.0021$ on adjacent pair $(0, 1)$ ($d=1$, 1 CX) and $\mathcal{F} = 0.9476 \pm 0.0025$ on distant pair $(0, 6)$ ($d=3$, 7 CX due to 2 routing SWAPs).
 6. **Error Mitigation Advantage (Bonus):**  
@@ -77,16 +88,27 @@ $$\text{Total Error}(n) \approx \underbrace{\mathcal{O}\left(\frac{T^2}{n}\right
 
 ```
 Noise-in-Trotter-Simulation/
+├── Phase One/                         # Archived & preserved Phase One implementation
+│   ├── main.ipynb                     # Original Phase One 23-section notebook
+│   ├── report.md                      # Phase One analysis report
+│   ├── README.md                      # Phase One overview
+│   ├── src/                           # Phase One source modules
+│   ├── processors/                    # Phase One processors A, B, B_9q, D
+│   ├── results/                       # Phase One SVG figures & CSV tables
+│   ├── scripts/                       # Phase One benchmark & figure scripts
+│   └── tests/                         # Phase One unit tests (52 tests passing)
+│
 ├── README.md                          # Master documentation & benchmark summary
 ├── report.md                          # Full Phase 2 scientific report (publication format)
 ├── main.ipynb                         # Pre-executed Phase 2 master notebook with rich outputs
 ├── qff_sim.py                         # Authoritative organizer module
+├── check_processor_d.py               # Official Phase 2 validator (root entry point)
 ├── processors/
 │   ├── processor_A.json               # 5-qubit tree baseline
 │   ├── processor_B.json               # 9-qubit heavy-hex baseline
 │   └── processor_D.json               # 9-qubit cubic hypercube hybrid (checker-verified)
 ├── tools/
-│   └── check_processor_d.py           # Official Phase 2 validator
+│   └── check_processor_d.py           # Official Phase 2 validator (tools entry point)
 ├── data/
 │   ├── instances_index.json           # Challenge instance manifest
 │   └── s3/
@@ -130,7 +152,7 @@ pip install -r requirements.txt
 
 ### 2. Validate Custom Processor D
 ```bash
-python tools/check_processor_d.py processors/processor_D.json 4
+python check_processor_d.py processors/processor_D.json 4
 ```
 *Expected Output:* `OK - Processor D satisfies all design rules.`
 
@@ -150,7 +172,7 @@ python scripts/make_phase2_figures.py
 ```bash
 python -m pytest -q
 ```
-*Expected Output:* `58 passed in 9.08s` (100% pass rate).
+*Expected Output:* `58 passed in 10.25s` (100% pass rate).
 
 ### 6. Execute Master Notebook
 ```bash

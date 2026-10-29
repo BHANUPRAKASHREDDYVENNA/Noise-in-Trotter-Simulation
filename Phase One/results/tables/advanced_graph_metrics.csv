@@ -1,0 +1,4 @@
+processor,name,num_qubits,num_edges,diameter,avg_path_length,max_degree,algebraic_connectivity
+A,processor_A,5,4,3,1.8,3,0.5188
+B,processor_B,7,7,4,2.0,3,0.5858
+D,processor_D,9,11,4,2.083,4,0.5395

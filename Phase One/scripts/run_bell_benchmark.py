@@ -1,0 +1,92 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+import sys
+
+import pandas as pd
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from src.bell_benchmark import ProcessorModel, benchmark_bell_processor  # noqa: E402
+from src.processors import validate_processor_definition  # noqa: E402
+
+RESULTS = ROOT / "results" / "auxiliary"
+
+
+def load(path: Path) -> dict:
+    definition = json.loads(path.read_text(encoding="utf-8"))
+    validate_processor_definition(definition, path.name)
+    return definition
+
+
+def _noise(definition: dict) -> tuple[float, float, float]:
+    noise = definition["noise"]
+    p1 = noise.get("p1", noise.get("single_qubit_error"))
+    p2 = noise.get("p2", noise.get("two_qubit_error"))
+    readout = noise["readout_error"]
+    values = (p1, p2, readout)
+    if any(value is None for value in values):
+        raise ValueError("Processor noise must define single-qubit, two-qubit and readout error rates.")
+    return float(p1), float(p2), float(readout)
+
+
+def main() -> None:
+    RESULTS.mkdir(parents=True, exist_ok=True)
+    definitions = {
+        "A": load(ROOT / "processors" / "processor_A.json"),
+        "B": load(ROOT / "processors" / "processor_B.json"),
+    }
+
+    models = []
+    for label in ("A", "B"):
+        definition = definitions[label]
+        p1, p2, readout = _noise(definition)
+        models.append(
+            ProcessorModel(
+                definition["name"],
+                definition["num_qubits"],
+                tuple(map(tuple, definition["coupling_map"])),
+                p1,
+                p2,
+                readout,
+                ports=tuple(definition["ports"]),
+            )
+        )
+
+    rows = [
+        benchmark_bell_processor(model, shots=2048, seed=7)
+        for model in models
+    ]
+    df = pd.DataFrame(rows)
+    df.to_csv(RESULTS / "bell_processor_metrics.csv", index=False)
+
+    arow, brow = df.iloc[0], df.iloc[1]
+    metrics = (
+        "fidelity",
+        "depth",
+        "two_qubit_gates",
+        "swap_overhead",
+        "physical_qubits",
+        "postselection_yield",
+        "effective_noise",
+        "readout_error",
+    )
+    comparison = pd.DataFrame(
+        [
+            {
+                "metric": metric,
+                "processor_A": float(arow[metric]),
+                "processor_B": float(brow[metric]),
+                "difference_B_minus_A": float(brow[metric] - arow[metric]),
+            }
+            for metric in metrics
+        ]
+    )
+    comparison.to_csv(RESULTS / "bell_comparison.csv", index=False)
+    print(df.to_string(index=False))
+
+
+if __name__ == "__main__":
+    main()

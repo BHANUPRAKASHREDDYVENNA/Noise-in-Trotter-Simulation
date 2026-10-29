@@ -1,0 +1,19 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+.DS_Store
+Thumbs.db
+*.log
+build/
+dist/
+*.egg-info/
+results/generated/
+results/auxiliary/bell_*.csv
+results/figures/*.png
+# Keep example results; ignore temporary exports.
+.env
+.env.*

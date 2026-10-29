@@ -1,0 +1,18 @@
+{
+  "problem_statement": {
+    "code": "S3",
+    "name": "Noise in Trotter Simulation",
+    "track": "Quantum Simulation"
+  },
+  "status": "GUIDE_DERIVED_DEMONSTRATOR",
+  "notes": "The supplied Phase-1 PDF does not define a unique S3 scientific instance; runnable numerical settings in this repository are explicitly illustrative.",
+  "trotter_demo": {
+    "n_qubits": 3,
+    "J": 1.0,
+    "h": 0.7,
+    "total_time": 0.8,
+    "trotter_steps": 4,
+    "trajectories": 2000,
+    "seed": 12345
+  }
+}

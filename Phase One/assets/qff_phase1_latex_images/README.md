@@ -1,0 +1,1 @@
+The local export contains the original guide-derived equation PNG assets. They are intentionally kept in the downloadable project export; this GitHub workspace contains regenerated SVG result figures under results/figures/ for portable repository rendering.

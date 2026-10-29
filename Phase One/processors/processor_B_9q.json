@@ -1,0 +1,19 @@
+{
+  "name": "processor_B_9q",
+  "stage": "online",
+  "architecture": "sparse 9-qubit heavy-hex-inspired graph",
+  "num_qubits": 9,
+  "coupling_map": [
+    [0, 1], [1, 2], [1, 6], [2, 3], [2, 6], [2, 5],
+    [3, 4], [4, 5], [5, 6], [6, 7], [6, 8], [8, 0]
+  ],
+  "basis_gates": ["rz", "sx", "x", "cx"],
+  "noise_model": "synthetic",
+  "compilation_baseline": "contemporary compilation baseline",
+  "source": "v2_master_guide",
+  "noise": {
+    "single_qubit_error": 0.001,
+    "two_qubit_error": 0.005,
+    "readout_error": 0.01
+  }
+}
