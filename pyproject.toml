@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 pythonpath = [".", "Phase2", "Phase1"]
-addopts = "-ra"
+addopts = "-ra --import-mode=importlib"
 testpaths = ["Phase2/tests", "Phase1/tests"]
 
 [tool.ruff]

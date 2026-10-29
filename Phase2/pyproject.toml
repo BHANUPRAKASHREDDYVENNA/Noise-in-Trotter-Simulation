@@ -3,9 +3,9 @@ requires = ["setuptools>=83,<85"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
-pythonpath = [".", "Phase2", "Phase1"]
+pythonpath = ["."]
 addopts = "-ra"
-testpaths = ["Phase2/tests", "Phase1/tests"]
+testpaths = ["tests"]
 
 [tool.ruff]
 target-version = "py311"
@@ -15,9 +15,9 @@ line-length = 120
 select = ["E4", "E7", "E9", "F"]
 
 [project]
-name = "qff2026-s3"
+name = "qff2026-s3-phase2"
 version = "0.3.0"
-description = "Architecture-aware quantum benchmark implementation"
+description = "Phase 2 Trotter simulation and noise benchmark"
 requires-python = ">=3.11"
 dependencies = [
   "numpy>=2.0,<3",

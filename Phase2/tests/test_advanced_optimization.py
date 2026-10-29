@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
 import numpy as np
 import pytest
 
@@ -22,7 +26,7 @@ from src.processors import load_processor
 
 def test_optimal_layout_eliminates_processor_b_swaps():
     """Verify that geometry-aware layout finder finds a 0-SWAP embedding for Processor B."""
-    proc_b = load_processor("processors/processor_B.json")
+    proc_b = load_processor(ROOT / "processors" / "processor_B.json")
     coupling = tuple(map(tuple, proc_b["coupling_map"]))
     n_phys = proc_b["num_qubits"]
     interaction = [(0, 2)]
@@ -91,7 +95,7 @@ def test_readout_error_inversion():
 
 def test_processor_d_graph_metrics_and_bell():
     """Verify Processor D topology has lower diameter and high Bell verification."""
-    proc_d = load_processor("processors/processor_D.json")
+    proc_d = load_processor(ROOT / "processors" / "processor_D.json")
     coupling = tuple(map(tuple, proc_d["coupling_map"]))
     metrics = compute_graph_metrics("processor_D", coupling, proc_d["num_qubits"])
 
