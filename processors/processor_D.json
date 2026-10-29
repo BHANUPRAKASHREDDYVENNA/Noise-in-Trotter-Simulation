@@ -1,21 +1,56 @@
 {
-  "name": "processor_D",
-  "stage": "offline_design",
-  "architecture": "hyperbolic-pentagonal hybrid graph",
+  "name": "Processor D",
+  "team": "QUANTUM'S",
+  "problem_statement": "PS-S3",
   "num_qubits": 9,
-  "coupling_map": [
-    [0, 1], [0, 3], [0, 5], [0, 8],
-    [1, 2], [2, 3], [3, 4], [4, 5], [5, 1],
-    [2, 6], [4, 7]
+  "edges": [
+    [0, 1],
+    [1, 2],
+    [2, 3],
+    [3, 0],
+    [4, 5],
+    [5, 6],
+    [6, 7],
+    [7, 4],
+    [0, 4],
+    [1, 5],
+    [2, 6],
+    [3, 7],
+    [0, 8],
+    [4, 8]
   ],
-  "basis_gates": ["rz", "sx", "x", "cx"],
-  "ports": [6, 7],
-  "noise_model": "synthetic",
-  "compilation_baseline": "geometry-aware optimal routing",
-  "source": "team_venna_designed",
+  "coupling_map": [
+    [0, 1],
+    [1, 2],
+    [2, 3],
+    [3, 0],
+    [4, 5],
+    [5, 6],
+    [6, 7],
+    [7, 4],
+    [0, 4],
+    [1, 5],
+    [2, 6],
+    [3, 7],
+    [0, 8],
+    [4, 8]
+  ],
+  "ports": [0, 6],
+  "basis_gates": [
+    "rz",
+    "sx",
+    "x",
+    "cx"
+  ],
+  "error_rates": {
+    "p1": 0.001,
+    "p2": 0.005,
+    "p_readout": 0.01
+  },
   "noise": {
     "single_qubit_error": 0.001,
-    "two_qubit_error": 0.01,
+    "two_qubit_error": 0.005,
     "readout_error": 0.01
-  }
+  },
+  "justification": "Our baseline benchmarks on Processor A and Processor B revealed that the primary bottleneck in simulating periodic ring Hamiltonians is topological mismatch. Processor A is a 5-qubit tree lacking any 4-cycle, which forces the SABRE transpiler to insert 11 routing SWAP gates (33 additional CX gates and depth 100), severely degrading fidelity. Processor B contains cycles but has higher average path length across its 9 qubits. Processor D resolves this bottleneck by implementing a 9-qubit cubic hypercube hybrid topology featuring an inner 4-qubit cycle (0,1,2,3) connected directly to a parallel 4-qubit cycle (4,5,6,7) via chordal bus lines, coupled to an ancillary readout port node 8. This eliminates 100% of routing SWAP gates for the 4-spin ring TFIM Hamiltonian while maintaining a strictly planar maximum node degree of 4. We assume standard superconducting transmon error rates (p1=0.001, p2=0.005, readout=0.01) matching the official noise specification. The design accepts the trade-off of limiting node degree to 4 to prevent microwave crosstalk and frequency crowding, requiring multi-hop routing for non-adjacent outer-ring interactions."
 }

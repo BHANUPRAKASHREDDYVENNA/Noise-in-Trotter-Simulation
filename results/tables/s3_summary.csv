@@ -1,0 +1,6 @@
+processor,noise_scale,n_star,fidelity_at_n_star
+Processor A,1.0,6,0.577419
+Processor B,1.0,7,0.662816
+Processor D,1.0,7,0.662816
+Processor D,0.5,8,0.782118
+Processor D,2.0,6,0.503076

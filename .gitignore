@@ -13,7 +13,7 @@ dist/
 *.egg-info/
 results/generated/
 results/auxiliary/bell_*.csv
-results/figures/*.png
+# results/figures/*.png
 # Keep example results; ignore temporary exports.
 .env
 .env.*

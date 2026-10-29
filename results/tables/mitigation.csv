@@ -1,0 +1,2 @@
+method,ms_raw,ms_mitigated,extra_shots
+"Zero-Noise Extrapolation (ZNE, Richardson 1st Order)",0.440308,0.497121,8192

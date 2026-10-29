@@ -1,0 +1,338 @@
+QISKIT FALL FEST 2026  ·  PHASE 2 HACKATHON
+Quantum Simulation Track
+Problem Statements PS-S1, PS-S2, PS-S3 and Participant Rules  ·  Final version for the 24-hour offline hackathon
+Read this entire document before you start
+Your team continues with the same team and the same problem statement it submitted in Phase 1 (PS-S1, PS-S2 or PS-S3). Every team also completes the common Phase 2 objectives: the Bell-state experiment and the Processor D design.
+This document and the QFF2026 Simulation Challenge Kit (zip) contain every input you need: locked Hamiltonians, parameter grids, gate conventions, processor definitions, code for every official measurement, and result-table formats.
+Deadline: Day 2, 5:40 PM IST. Submit your public GitHub repository URL on the hackathon portal.
+Why the problem statements were refined
+In Phase 1 many teams raised clarification questions because some inputs and definitions were left open: which boundary condition, which observables, which time window, how fidelity is measured, and what the processors are. The 24-hour offline round leaves no time for that, so the problem statements were reviewed by subject experts and every open point is now fixed in this document.
+Where this document gives a number, a convention or a definition, use it exactly. It supersedes the Phase 1 wording. The tasks themselves are unchanged in spirit; they are now precise enough that every team measures the same thing and judging is fair.
+1. Phase 2 at a glance
+Phase 2 runs for 24 hours in the Auditorium, X-Lab, from 6:00 PM on Day 1 to 6:00 PM on Day 2.
+When (IST)
+What happens
+Day 1, 4:45–5:40 PM
+Check-in; run starter/starter_sim.ipynb to confirm your environment works
+Day 1, 6:00 PM
+Hackathon starts
+Day 1, 6:00–8:00 PM
+Help desk for clarification questions on this document and the kit
+Day 2, 10:00 AM–1:00 PM
+Mentor rounds and progress check
+Day 2, 5:40 PM
+Hard deadline: final commit and repository URL on the portal
+Day 2, 6:00 PM
+Competition closes; judging follows
+#
+Objective
+What you must show
+Section
+1
+Bell-state preparation and verification
+XX, YY, ZZ correlations and fidelity of |Φ⁺⟩ on Processor D, ideal and noisy
+5
+2
+Custom Processor D design
+processor_D.json (coupling map, native gates, error rates, justification) that passes the checker
+6
+3
+Solution development and Processor D benchmarking
+Your PS solved, benchmarked on Processors A, B and D, compared with the exact reference
+7–10
+4
+Validation and reproducibility
+Runnable repository, result tables, figures, run instructions
+11
+5
+Technical analysis and recommendation
+Trade-offs, limitations, evidence-based improvements, final report
+11–12
+2. What is in the challenge kit
+Path
+Contents
+data/instances_index.json
+Every locked value: g grid, time grid, step lists, noise scales, gate conventions, processors and settings
+data/s1/
+PS-S1: open-chain TFIM operators for N = 4 (required) and N = 6 (optional) at 7 values of g, each with exact E₀ and E₁
+data/s2/
+PS-S2: open-chain TFIM operator, N = 4, g = 1
+data/s3/
+PS-S3: ring TFIM operator, N = 4, g = 1
+starter/qff_sim.py
+Official settings, Processors A/B, noise model with scale factor, resource metrics, Bell experiment, Processor D checker, TFIM builder, observables, HVA ansatz, Trotter circuits (first/second order, CX or RZZ construction), exact evolution, density-matrix fidelity, Z-basis measurement
+starter/starter_sim.ipynb
+Worked example of the official workflow
+starter/processor_D_template.json
+Processor D file format
+tools/check_processor_d.py
+Checks a Processor D file against every design rule
+templates/results_columns.md
+Required result tables: file names and columns
+requirements.txt
+Pinned environment
+Model and conventions (all problem statements)
+Transverse-field Ising model: H = −J Σᵢ ZᵢZᵢ₊₁ − g Σᵢ Xᵢ, with J = 1. Spin up is |0⟩ (Z = +1).
+Boundary: PS-S1 and PS-S2 use the open chain (bonds (0,1), (1,2), (2,3) for N = 4). PS-S3 uses the ring (adds bond (3,0)), so that processor connectivity matters.
+Labels: Pauli strings and bitstrings use Qiskit order (qubit 0 is the right-most character). Operator files hold [label, coefficient] pairs under operator.
+3. Official settings and environment
+Setting
+Official value
+Software
+Dedicated venv from requirements.txt: Python 3.11–3.13, qiskit 1.4.6, qiskit-aer 0.18.0, numpy 2.4.6, scipy 1.17.1, matplotlib 3.11.2
+Basis gates
+rz, sx, x, cx (Processor D may use cz or rzz as its two-qubit gate instead)
+Transpilation
+optimization_level = 1, SABRE layout and routing, seed_transpiler = 42
+Simulator
+AerSimulator, seed_simulator = 42; density-matrix method for fidelities
+Noise model (noisy runs)
+1-qubit depolarizing p = 0.001 on rz, sx, x; 2-qubit depolarizing p = 0.005 on cx, cz, rzz; readout bit-flip p = 0.01. PS-S3 also scales all three rates by 0.5 and 2
+Shots
+Bell: 4,096 per basis. Z-basis observables: 4,096
+Optimizer seeds
+Initial parameters from numpy.random.default_rng(seed), uniform in (−π, π); seeds 0, 1, 2
+4. Processors A, B and D
+Processor definitions
+Processor A — 5 qubits, coupling edges (0,1), (1,2), (1,3), (3,4). A tree: it contains a 4-qubit line but no 4-qubit cycle.
+Processor B — 9 qubits, coupling edges (0,1), (1,2), (1,6), (2,3), (2,6), (2,5), (3,4), (4,5), (5,6), (6,7), (6,8), (8,0).
+Processor D — your own design (Section 6), at most 12 qubits.
+Edges are undirected. A and B use the official basis and noise model, so differences come from connectivity alone. Required rows use these maps; your Phase 1 variants may appear as additional experiments.
+Capacity rule. A circuit that needs more qubits than a processor has is not run on it: enter "not executable: needs N qubits, has M" and explain the limit. This only applies to the optional N = 6 tier of PS-S1 on Processor A.
+Resource metrics come from circuit_metrics(circuit, processor):
+Metric
+Definition
+Logical two-qubit gates
+Two-qubit gate count after transpiling with the official settings but no connectivity limit (the gates the algorithm itself needs)
+Two-qubit gate count
+Two-qubit gate count after the official transpilation for the processor
+Routing two-qubit gates
+Two-qubit gate count − logical two-qubit gates (the gates added by SWAPs)
+SWAP count
+SWAP gates inserted by routing, counted before decomposition
+Depth / two-qubit depth
+Depth of the transpiled circuit without measurements / counting only two-qubit gates
+5. Objective 1 — Bell-state preparation and verification
+Prepare |Φ⁺⟩ = (|00⟩ + |11⟩)/√2 with H on the first qubit and CX from the first to the second, on Processor D.
+Run on one pair of directly connected qubits and on the pair of qubits farthest apart in your D graph. Report the physical qubits.
+For each pair, run ideal and noisy, measuring XX, YY and ZZ with 4,096 shots each (12 circuits).
+Basis changes: ZZ none; XX: H on both; YY: S† then H on both. Ideal values ⟨XX⟩ = +1, ⟨YY⟩ = −1, ⟨ZZ⟩ = +1.
+⟨P⟩ = (N_even − N_odd) / N,      SE(⟨P⟩) = √((1 − ⟨P⟩²) / N)
+F = (1 + ⟨XX⟩ − ⟨YY⟩ + ⟨ZZ⟩) / 4,      SE(F) = ¼ √(SE_XX² + SE_YY² + SE_ZZ²)
+This is exact for |Φ⁺⟩; P(00) + P(11) is not accepted as a fidelity. bell_experiment(processor, pair, noisy) runs the procedure. Report bell.csv and explain in 3–5 sentences why the noisy fidelity drops and why the distant pair is worse.
+6. Objective 2 — Processor D proposal
+Your proposal is processors/processor_D.json plus a report section. It must contain the four items below; tools/check_processor_d.py checks the rules, and a file that fails scores zero for Objective 2.
+Required item
+JSON field
+Rule
+Coupling map
+num_qubits, edges
+Connected undirected graph; at least 4 qubits (6 if you do the PS-S1 N = 6 tier), at most 12; no qubit connected to more than 4 others
+Native gate set
+basis_gates
+Exactly [rz, sx, x, cx], [rz, sx, x, cz] or [rz, sx, x, rzz]. An RZZ basis carries the same two-qubit error rate as CX
+Assumed error rates
+error_rates: p1, p2, p_readout
+Equal to or worse than 0.001 / 0.005 / 0.01. Required benchmarks always use the official model
+Justification
+justification
+One paragraph (≥ 40 words): the bottleneck you measured on A/B for your circuits, how D addresses it, why these error rates, and the trade-off accepted
+Freeze Processor D at your final commit. Include a drawing of the D graph in the report and compare its expected effect with your measured routing gates, depth and noisy results.
+7. Definitions used by all simulation problem statements
+Quantity
+Official definition
+Energy error
+E_VQE − E₀ with E₀ from exact diagonalisation (also given in the S1 files)
+State fidelity (pure)
+F = |⟨ψ_exact|ψ⟩|²
+State fidelity (noisy)
+F = ⟨ψ_exact|ρ|ψ_exact⟩, with ρ from a density-matrix simulation of the transpiled circuit under the official noise model (gate noise; no readout). noisy_state_fidelity() computes it and handles qubit re-mapping
+Trotter state error
+‖ |ψ_Trotter(T)⟩ − |ψ_exact(T)⟩ ‖ (2-norm of the difference), via state_error()
+Exact evolution
+|ψ(t)⟩ = e^(−iHt)|ψ(0)⟩ computed with exact_evolution() (scipy expm_multiply)
+Z-basis observable from shots
+run_z_measurement(): 4,096 shots, mean and standard error
+Optimizer calls
+Number of energy evaluations, counted with CountedCost
+8. PS-S1 — Ising model ground state and phase change
+Problem
+Prepare the ground state of the open-chain transverse-field Ising model with VQE across the change from the ordered phase (small g, spins aligned along Z) to the disordered phase (large g, spins along X), and show which observables reveal the change and how deep the ansatz must be. At finite N the transition near g = 1 is smooth, which is why a range of g is used.
+Locked data
+Item
+Value
+Hamiltonian
+H = −Σᵢ ZᵢZᵢ₊₁ − g Σᵢ Xᵢ, open chain, J = 1
+Sizes
+N = 4 (required); N = 6 (optional tier, bonus)
+g values
+0.25, 0.50, 0.75, 1.00, 1.25, 1.50, 2.00 (7 values)
+Files
+data/s1/tfim_open_N<N>_g<g>.json, with exact E0_exact and E1_exact
+Method
+VQE only (QPE is not part of this problem)
+Recommended ansatz: Hamiltonian Variational Ansatz (HVA)
+Start in |+⟩^N, then repeat L layers of [a ZZ layer exp(−iγₗ/2 Σ ZᵢZᵢ₊₁) on all bonds, then an RX(βₗ) layer on all qubits]. Two parameters per layer, it follows the Hamiltonian, keeps the spin-flip symmetry, and its bonds map directly onto a line of qubits. hva_ansatz(N, L) builds it. Other ansätze are allowed if justified.
+Observables
+Observable
+Definition
+What it shows
+Transverse magnetization
+m_x = (1/N) Σᵢ ⟨Xᵢ⟩
+Grows from ≈ 0 to ≈ 1 as g increases
+Nearest-neighbour correlation
+C_zz = (1/(N−1)) Σᵢ ⟨ZᵢZᵢ₊₁⟩
+≈ 1 in the ordered phase, falls in the disordered phase
+Squared magnetization
+⟨M_z²⟩/N², with M_z = Σᵢ Zᵢ
+Order parameter that survives at finite N
+Mean ⟨σz⟩ (diagnostic)
+⟨M_z⟩/N
+Exactly 0 in the true ground state by symmetry. A non-zero VQE value means the ansatz broke the symmetry — report and explain it
+Tasks
+Exact references. Diagonalise H for every g and compute E₀, E₁ and the four observables.
+VQE across g. For every g, run VQE with seeds 0, 1, 2. Report the best energy, energy error, the four observables, fidelity F = |⟨E₀|ψ⟩|² and F₂ = |⟨E₀|ψ⟩|² + |⟨E₁|ψ⟩|², optimizer calls and number of parameters (s1_results.csv). F₂ matters at small g, where E₀ and E₁ are almost degenerate.
+Layer study. Find the smallest number of layers L that reaches |energy error| < 10⁻³ at each g, and explain why the ordered side needs more depth.
+Phase plot. Plot m_x, C_zz and ⟨M_z²⟩/N² against g, VQE against exact, and say which observable shows the change most clearly.
+Noisy run on Processor D. For your converged circuits at g = 0.5, 1.0 and 2.0, compute the observables and energy from the noisy density matrix (noisy_expectations()) and the noisy fidelity (s1_noisy.csv).
+Architecture. Report resource metrics on A, B and D for your final ansatz, and explain how the processor supports its entangling pattern.
+How PS-S1 is scored (inside Objective 3)
+Energy error and F/F₂ across all g
+Correct observables, including a correct reading of the ⟨σz⟩ diagnostic
+Layer study and phase-plot interpretation
+Noisy results and resource comparison; N = 6 tier as a bonus
+9. PS-S2 — Real-time dynamics and Trotter error
+Problem
+Simulate a quench: start in the Néel state and evolve under the transverse-field Ising model. Measure how the Trotter step count controls accuracy and cost, show the error scaling on a log-log plot, and compare two ways of building the ZZ interaction on different hardware.
+Locked data
+Item
+Value
+Hamiltonian
+Open chain, N = 4, J = 1, g = 1 (data/s2/tfim_open_N4_g1.00.json)
+Initial state
+Néel: Zᵢ = (−1)ⁱ, i.e. |↑↓↑↓⟩, Qiskit label 1010
+Time grid
+t = 0, 0.25, 0.50, …, 4.00 (17 points)
+Steps for the curves
+n = 1, 2, 4, 8 total steps at every t (Δt = t/n)
+Log-log study
+T = 4, n = 1, 2, 4, 8, 16, 32, 64, 128; slope from a least-squares fit of log(error) vs log(n) over the last 4 points
+Trotter conventions (exact formulas so all teams build the same circuit)
+First order: U₁(Δt) = e^(−iH_X Δt) · e^(−iH_ZZ Δt) — in the circuit the ZZ layer comes first, then the X layer.
+Second order (bonus): U₂(Δt) = e^(−iH_X Δt/2) · e^(−iH_ZZ Δt) · e^(−iH_X Δt/2).
+Gates: e^(+iJΔt ZᵢZⱼ) = RZZ(−2JΔt) and e^(+igΔt Xᵢ) = RX(−2gΔt). Bonds: even bonds (0,1), (2,3) first, then odd bond (1,2).
+trotter_circuit(N, J, g, t, n, order, zz_mode) implements exactly this; your own implementation must match its statevector.
+Observables
+Observable
+Definition
+First-site magnetization
+⟨Z₀(t)⟩
+Staggered magnetization
+M_s(t) = (1/N) Σᵢ (−1)ⁱ ⟨Zᵢ(t)⟩ (equals 1 at t = 0)
+Loschmidt echo (optional)
+|⟨ψ(0)|ψ(t)⟩|², free from the statevector
+Tasks
+Curves. For n = 1, 2, 4, 8 (first order), plot ⟨Z₀⟩ and M_s against t with the exact curve, and report the absolute error at every t and its maximum (s2_curves.csv).
+Log-log error. At T = 4 compute the Trotter state error for every n in the log-log list, plot log-log, and report the fitted slope (s2_loglog.csv). Explain the value you expect and the one you measure.
+ZZ construction. Build the ZZ term as CX–RZ–CX and as one RZZ gate. Report two-qubit gates and depth per Trotter step on Processors A, B and D, and on a Processor D variant with the rzz basis (s2_zz.csv). Explain when RZZ saves gates and when it does not.
+Noisy check on D. For n = 4 and n = 8 at t = 4, measure ⟨Z₀⟩ and M_s with 4,096 shots, ideal and noisy on Processor D.
+Architecture. Report resource metrics on A, B and D for one Trotter step and for the n = 8, t = 4 circuit.
+Bonus: second-order Suzuki
+Repeat the log-log study with second order and plot both orders together. The slope should change from about −1 to about −2; explain why, and compare the gate cost of each order at equal accuracy.
+How PS-S2 is scored (inside Objective 3)
+Correct curves and errors against the exact evolution
+Log-log study with a correct slope and explanation
+ZZ construction comparison with the right conclusion per basis
+Resource comparison; second-order bonus
+10. PS-S3 — Trotter error versus noise: finding the best step count
+Problem
+More Trotter steps reduce the algorithmic error, but every step adds gates and therefore noise. Under a fixed noise model there is a best number of steps n*. The headline deliverable is to find n* and explain it, and to show how it moves with noise strength and with processor connectivity.
+Locked data
+Item
+Value
+Hamiltonian
+Ring, N = 4, J = 1, g = 1 (data/s3/tfim_ring_N4_g1.00.json), bonds (0,1), (1,2), (2,3), (3,0)
+Initial state, time
+Néel 1010; evolve to T = 2.0
+Trotter
+First order, convention of Section 9; bonds: even (0,1), (2,3) then odd (1,2), (3,0)
+Step counts
+n = 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 16
+Noise scales
+0.5×, 1×, 2× all three official rates (sweep on Processor D)
+Tasks
+Exact reference. Compute |ψ_exact(T)⟩ and M_s(T).
+Step scan (headline). For every n, on Processors A, B and D at 1× noise, compute the noisy density-matrix fidelity F(n) (noisy_state_fidelity(), required) and M_s from 4,096 noisy shots. Find n* = the n with the highest F (smallest n on ties) for each processor (s3_scan.csv, s3_summary.csv).
+Explain the crossover. Plot F(n) together with the noise-free Trotter fidelity, and explain why F rises then falls.
+Noise sweep. On Processor D, repeat the scan at 0.5× and 2× noise and show how n* moves.
+Gate split. For every circuit, split the two-qubit gate count into logical Trotter gates and routing gates added by SWAPs. Relate the loss of fidelity to each, and explain why the ring is harder on some processors.
+Bonus: error mitigation
+Apply one method — readout-error correction or zero-noise extrapolation — to M_s at n* on Processor D, and report the raw value, the mitigated value and the extra shots or circuits used (mitigation.csv).
+How PS-S3 is scored (inside Objective 3)
+Correct n* for A, B and D and a clear crossover explanation
+Noise sweep and the direction n* moves
+Gate split and connectivity analysis
+Bonus: mitigation with its cost
+11. Submission package and reproducibility
+Submit one public GitHub repository URL on the portal before 5:40 PM IST on Day 2. The commit at the deadline is judged.
+project/
+├── README.md                 # team, PS code, how to run, key results
+├── main.ipynb                # runs everything top to bottom
+├── requirements.txt          # the versions you actually used
+├── qff_sim.py                # organizer starter module (unchanged)
+├── processors/processor_D.json
+├── results/tables/*.csv      # files and columns in templates/results_columns.md
+├── results/figures/          # PNG figures used in the report
+└── report.md (or report.pdf) # final report, about 4–8 pages
+A judge must be able to install requirements.txt and run main.ipynb top to bottom without edits within 30 minutes on a laptop CPU; longer steps may reload saved results behind a RECOMPUTE = False flag.
+All seeds are written in the notebook; required runs use official seeds and settings.
+Report numbers must match the notebook output.
+Declare any AI tool use in the README.
+Final report (Objective 5): approach; Bell results; Processor D design and justification; PS results against the exact references on A, B and D; trade-offs, limitations and the next improvements you would make, each supported by measurements. The presentation slot and format are announced at the opening ceremony.
+12. Judging rubric (100 points)
+Objective
+Points
+What judges look for
+1. Bell-state verification
+10
+Correct bases and fidelity with SE; sound reading of ideal vs noisy and near vs far pair
+2. Processor D proposal
+20
+Passes the checker; all four items; design targets a measured bottleneck; honest trade-off
+3. Solution and benchmarking
+35
+Correct model, conventions and references 10; PS-specific quality items (Sections 8–10) 15; resource comparison on A/B/D 10
+4. Validation and reproducibility
+15
+Runs end to end; required tables present and consistent; official settings used
+5. Analysis and report
+20
+Explains results with evidence (phase change, error scaling or n* crossover); limitations; concrete next steps
+Bonuses (up to 5 points, total capped at 100): PS-S1 N = 6 tier, PS-S2 second-order Suzuki, PS-S3 error mitigation. Deductions: missing required run −2 each (up to −10); a changed locked value or official setting in a required run caps Objective 3 at half.
+13. Frequently asked questions
+Question
+Answer
+Why is S3 on a ring when S1 and S2 are open chains?
+On an open chain of 4 qubits every processor has a matching line, so no SWAPs are needed. The ring needs a 4-qubit cycle, which Processor A does not have, so connectivity becomes part of the result.
+Can we use QPE in PS-S1?
+No. PS-S1 is VQE only.
+Our VQE gives a non-zero ⟨σz⟩. Is that wrong?
+The exact value is 0. A non-zero value means your ansatz broke the spin-flip symmetry; report it and explain it rather than hiding it.
+At g = 0.25 our energy is almost exact but the fidelity is about 0.5.
+Expected when E₀ and E₁ are nearly degenerate. Report F₂ as well.
+Does RZZ always save gates?
+Only on a processor whose native basis contains RZZ. On a CX or CZ basis an RZZ gate is compiled into two two-qubit gates.
+Can we use PauliEvolutionGate or Qiskit's Trotter classes?
+Yes, if the resulting statevector matches trotter_circuit() for the official convention (check it).
+Is Processor C used?
+No. Phase 2 uses Processors A, B and D.
+Can we use real IBM hardware?
+Not for required runs. Everything runs on the local Aer simulator.
+14. Final checklist
+Same team and problem statement as Phase 1, named in README.md
+Locked model, grids, conventions and official settings used for every required run
+Bell: 2 pairs × ideal/noisy × XX, YY, ZZ with F ± SE (bell.csv)
+processor_D.json passes tools/check_processor_d.py and is frozen; drawing and justification in the report
+All tables from templates/results_columns.md for your PS; resource metrics on A, B and D
+PS-S1: 7 g values × observables × F/F₂, layer study, noisy runs. PS-S2: curves for n = 1–8, log-log slope, ZZ comparison. PS-S3: n* on A/B/D, noise sweep on D, gate split
+main.ipynb runs within 30 minutes; report complete; URL submitted before 5:40 PM IST on Day 2
